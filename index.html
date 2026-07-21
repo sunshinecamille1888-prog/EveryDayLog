@@ -456,6 +456,28 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .l-edit-form { flex-wrap: wrap; gap: 6px; }
   .l-edit-form select, .l-edit-form input { width: 100%; min-height: 40px; font-size: 14px; }
   .l-edit-save, .l-edit-cancel { min-height: 40px; padding: 8px 16px; font-size: 14px; }
+
+  /* 移动端头部重组 */
+  .date-header { flex-wrap: wrap; gap: 6px; }
+  .theme-switcher { display: none !important; }
+  .sound-toggle { font-size: 0; padding: 6px 8px; gap: 0; }
+  .sound-toggle #soundIcon { font-size: 15px; }
+  .btn-calendar { padding: 6px 10px; font-size: 11px; }
+  .date-timer-summary { font-size: 12px; margin-left: 0; }
+  .device-tag { font-size: 9px; padding: 1px 6px; }
+  .sync-dot { min-width: auto; min-height: auto; width: 9px; height: 9px; }
+
+  /* 热力图紧凑布局 */
+  .heatmap-grid { gap: 1px; font-size: 10px; grid-template-columns: 28px repeat(24, 1fr); }
+  .heatmap-grid .hm-cell { min-width: 0; }
+  .heatmap-grid .hm-label { font-size: 9px; padding-right: 2px; }
+
+  /* 面板紧凑 */
+  .timer-panel { padding: 14px 12px; }
+  .timer-row { gap: 8px; }
+  .timer-controls { gap: 4px; }
+  .ledger-panel { padding: 14px 12px; margin-top: 10px; }
+  .stats-panel { padding: 14px 12px; }
 }
 
 /* ── 记账面板 ── */

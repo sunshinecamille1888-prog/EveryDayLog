@@ -1050,8 +1050,8 @@ async function setupSync(key) {
         var result = await resp.json();
         var bins = Array.isArray(result) ? result : (result.records || []);
         for (var i = 0; i < bins.length; i++) {
-          var bName = bins[i].snippet ? bins[i].snippet.name : bins[i].name;
-          var bId = bins[i].record || bins[i].id || (bins[i].metadata && bins[i].metadata.id);
+          var bName = bins[i].snippet ? bins[i].snippet.name : (bins[i].metadata ? bins[i].metadata.name : bins[i].name);
+          var bId = (bins[i].metadata && bins[i].metadata.id) || (typeof bins[i].record === 'string' ? bins[i].record : null) || bins[i].id;
           if (bName === binName && bId) { binId = bId; break; }
         }
         if (binId) try { localStorage.setItem(SYNC_BIN_STORAGE, binId); } catch(e) {}
@@ -1112,6 +1112,7 @@ async function syncFromCloud() {
       // 重新渲染当前日期数据和日历视图
       setDate(currentDate);
       if (typeof calYear !== 'undefined') renderCalendar(calYear, calMonth);
+      renderLedger();
       updateSyncDot('synced');
     } else {
       updateSyncDot('error');
@@ -1131,7 +1132,7 @@ async function syncToCloud() {
   try {
     var entries = loadEntries();
     var ledger = getLedgerData();
-    await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+    var resp = await fetch('https://api.jsonbin.io/v3/b/' + binId, {
       method: 'PUT',
       headers: { 
         'X-Master-Key': SYNC_API_KEY, 
@@ -1143,6 +1144,7 @@ async function syncToCloud() {
         updatedAt: new Date().toISOString() 
       })
     });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     updateSyncDot('synced');
   } catch(e) { 
     console.warn('Push error:', e); 
@@ -3132,7 +3134,7 @@ function getLedgerData() {
   try { return JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]'); }
   catch(e) { return []; }
 }
-function saveLedgerData(data) { try { localStorage.setItem(LEDGER_KEY, JSON.stringify(data)); } catch(e) {} }
+function saveLedgerData(data) { try { localStorage.setItem(LEDGER_KEY, JSON.stringify(data)); } catch(e) {} if (!_syncBusy) syncToCloud(); }
 
 function getDayTransactions(dateStr) {
   return getLedgerData().filter(t => t.date === dateStr);

@@ -1,0 +1,18 @@
+{
+  "name": "Daily Doc",
+  "short_name": "DailyDoc",
+  "description": "每日文档 - 计时记录工具",
+  "start_url": "daily-doc.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#fff5f7",
+  "background_color": "#fff5f7",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "scope": "."
+}

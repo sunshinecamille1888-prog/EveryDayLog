@@ -1012,30 +1012,30 @@ function getBinId() { try { return localStorage.getItem(SYNC_BIN_STORAGE); } cat
 
 function hashKey(key) { var h=0; for(var i=0;i<key.length;i++){h=((h<<5)-h)+key.charCodeAt(i);h|=0;} return 'dd-sync-'+Math.abs(h).toString(36); }
 
-function updateSyncDot(s) { var d=document.getElementById('syncDot'); if(!d)return; d.className='sync-dot '+s; d.setAttribute('data-tip',{synced:'已同步',syncing:'同步中…',error:'同步失败',idle:'未设置同步'}[s]||''); }
+function updateSyncDot(s) { var d=document.getElementById('syncDot'); if(!d)return; d.className='sync-dot '+s; d.setAttribute('data-tip',{synced:'已同步 · 点击手动刷新',syncing:'同步中…',error:'同步失败 · 点击重试',idle:'未设置同步'}[s]||''); }
 
-function openSyncSettings() { document.getElementById('syncModalOverlay').classList.add('show'); document.getElementById('syncKeyInput').focus(); }
+function openSyncSettings() { if (syncReady) { syncFromCloud(); } else { document.getElementById('syncModalOverlay').classList.add('show'); document.getElementById('syncKeyInput').focus(); } }
 
 function skipSync() { try { sessionStorage.setItem('sync_skipped', '1'); } catch(e) {} document.getElementById('syncModalOverlay').classList.remove('show'); }
 
 function confirmSync() {
-  var key = document.getElementById('syncKeyInput').value.trim();
+  var keyInput = document.getElementById('syncKeyInput');
+  var key = keyInput ? keyInput.value.trim() : '';
   if (!key) return;
-  try { localStorage.setItem(SYNC_SECRET_STORAGE, key); } catch(e) {}
-  document.getElementById('syncModalOverlay').classList.remove('show');
+  try { localStorage.setItem(SYNC_SECRET_STORAGE, key); localStorage.removeItem(SYNC_BIN_STORAGE); } catch(e) {}
+  var modal = document.getElementById('syncModalOverlay');
+  if (modal) modal.classList.remove('show');
   setupSync(key);
 }
 
 function handleSyncKeyEnter(e) { if (e.key === 'Enter') confirmSync(); }
 
 async function initSync() {
-  if (SYNC_API_KEY.indexOf('YOUR_MASTER_KEY') >= 0) return;
-  document.getElementById('syncKeyInput').addEventListener('keydown', handleSyncKeyEnter);
+  if (!SYNC_API_KEY || SYNC_API_KEY.indexOf('YOUR_MASTER_KEY') >= 0) return;
+  var keyInput = document.getElementById('syncKeyInput');
+  if (keyInput) keyInput.addEventListener('keydown', handleSyncKeyEnter);
   var key = getSyncKey();
-  if (!key && !sessionStorage.getItem('sync_skipped')) {
-    document.getElementById('syncModalOverlay').classList.add('show');
-    return;
-  }
+  if (!key && !sessionStorage.getItem('sync_skipped')) { openSyncSettings(); return; }
   if (key) await setupSync(key);
 }
 
@@ -1044,32 +1044,34 @@ async function setupSync(key) {
   var binId = getBinId();
   updateSyncDot('syncing');
   if (!binId) {
-    // 尝试从云端搜索同名 bin
     try {
       var resp = await fetch('https://api.jsonbin.io/v3/b', { headers: { 'X-Master-Key': SYNC_API_KEY } });
       if (resp.ok) {
-        var bins = await resp.json();
+        var result = await resp.json();
+        var bins = Array.isArray(result) ? result : (result.records || []);
         for (var i = 0; i < bins.length; i++) {
-          if (bins[i].name === binName) { binId = bins[i].id; break; }
+          var bName = bins[i].snippet ? bins[i].snippet.name : bins[i].name;
+          var bId = bins[i].record || bins[i].id || (bins[i].metadata && bins[i].metadata.id);
+          if (bName === binName && bId) { binId = bId; break; }
         }
         if (binId) try { localStorage.setItem(SYNC_BIN_STORAGE, binId); } catch(e) {}
       }
-    } catch(e) {}
-    // 未找到则创建新 bin
+    } catch(e) { console.warn('Search bin error:', e); }
     if (!binId) {
       try {
         var entries = loadEntries();
+        var ledger = getLedgerData();
         var createResp = await fetch('https://api.jsonbin.io/v3/b', {
           method: 'POST',
           headers: { 'X-Master-Key': SYNC_API_KEY, 'Content-Type': 'application/json', 'X-Bin-Name': binName },
-          body: JSON.stringify({ entries: entries, updatedAt: new Date().toISOString() })
+          body: JSON.stringify({ entries: entries, ledger: ledger, updatedAt: new Date().toISOString() })
         });
         if (createResp.ok) {
           var data = await createResp.json();
-          binId = data.metadata.id;
-          try { localStorage.setItem(SYNC_BIN_STORAGE, binId); } catch(e) {}
+          binId = data.metadata ? data.metadata.id : data.id;
+          if (binId) try { localStorage.setItem(SYNC_BIN_STORAGE, binId); } catch(e) {}
         }
-      } catch(e) { console.warn('Create bin:', e); }
+      } catch(e) { console.warn('Create bin error:', e); }
     }
   }
   if (binId) { syncReady = true; await syncFromCloud(); }
@@ -1080,23 +1082,44 @@ async function syncFromCloud() {
   if (!syncReady) return;
   var binId = getBinId(); if (!binId) return;
   _syncBusy = true;
+  updateSyncDot('syncing');
   try {
-    var resp = await fetch('https://api.jsonbin.io/v3/b/' + binId, { headers: { 'X-Master-Key': SYNC_API_KEY } });
+    var resp = await fetch('https://api.jsonbin.io/v3/b/' + binId, { 
+      headers: { 'X-Master-Key': SYNC_API_KEY } 
+    });
     if (resp.ok) {
       var data = await resp.json();
-      var cloud = data.record;
+      var cloud = data.record || {};
       var local = loadEntries();
-      var merged = {};
-      // 先放云端数据
-      if (cloud.entries) { for (var k in cloud.entries) merged[k] = cloud.entries[k]; }
-      // 本地独有的保留
-      for (var k2 in local) { if (!merged[k2]) merged[k2] = local[k2]; }
-      // 日程同步
-      if (cloud.schedule) { try { localStorage.setItem('daily_doc_schedule', JSON.stringify(cloud.schedule)); } catch(e) {} try { initScheduleUI(); } catch(e) {} }
-      saveEntries(merged);
+      var mergedEntries = {};
+      // 合并日记/笔记数据
+      if (cloud.entries) { 
+        for (var k in cloud.entries) mergedEntries[k] = cloud.entries[k]; 
+      }
+      for (var k2 in local) { 
+        if (!mergedEntries[k2]) mergedEntries[k2] = local[k2]; 
+      }
+      saveEntries(mergedEntries);
+      // 合并账本数据
+      if (cloud.ledger && Array.isArray(cloud.ledger)) {
+        var localLedger = getLedgerData();
+        var ledgerMap = {};
+        cloud.ledger.forEach(function(item) { ledgerMap[item.id] = item; });
+        localLedger.forEach(function(item) { if (!ledgerMap[item.id]) ledgerMap[item.id] = item; });
+        var mergedLedger = Object.values(ledgerMap);
+        saveLedgerData(mergedLedger);
+      }
+      // 重新渲染当前日期数据和日历视图
+      setDate(currentDate);
+      if (typeof calYear !== 'undefined') renderCalendar(calYear, calMonth);
       updateSyncDot('synced');
+    } else {
+      updateSyncDot('error');
     }
-  } catch(e) { console.warn('Pull:', e); updateSyncDot('error'); }
+  } catch(e) { 
+    console.warn('Pull error:', e); 
+    updateSyncDot('error'); 
+  }
   _syncBusy = false;
 }
 
@@ -1107,17 +1130,38 @@ async function syncToCloud() {
   updateSyncDot('syncing');
   try {
     var entries = loadEntries();
-    var schedule = null;
-    try { schedule = JSON.parse(localStorage.getItem('daily_doc_schedule')); } catch(e) {}
+    var ledger = getLedgerData();
     await fetch('https://api.jsonbin.io/v3/b/' + binId, {
       method: 'PUT',
-      headers: { 'X-Master-Key': SYNC_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entries: entries, schedule: schedule, updatedAt: new Date().toISOString() })
+      headers: { 
+        'X-Master-Key': SYNC_API_KEY, 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ 
+        entries: entries, 
+        ledger: ledger, 
+        updatedAt: new Date().toISOString() 
+      })
     });
     updateSyncDot('synced');
-  } catch(e) { console.warn('Push:', e); updateSyncDot('error'); }
+  } catch(e) { 
+    console.warn('Push error:', e); 
+    updateSyncDot('error'); 
+  }
   _syncBusy = false;
 }
+
+// 当手机解锁唤醒、切回浏览器标签页时自动从云端拉取最新数据
+window.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && syncReady) {
+    syncFromCloud();
+  }
+});
+window.addEventListener('pageshow', function() {
+  if (syncReady) {
+    syncFromCloud();
+  }
+});
 
 // ====== 日历 ======
 function renderCalendar(year, month) {

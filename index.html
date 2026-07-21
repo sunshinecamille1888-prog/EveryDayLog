@@ -672,6 +672,9 @@ body.focus-mode .month-summary { display: none !important; }
 @keyframes sync-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 .sync-dot::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
 .sync-dot:hover::after { opacity: 1; }
+.device-tag { font-size: 10px; font-weight: 600; color: #fff; background: #666; padding: 2px 8px; border-radius: 8px; flex-shrink: 0; line-height: 1.4; text-transform: uppercase; }
+.device-tag.mobile { background: #5c6bc0; }
+.device-tag.desktop { background: #78909c; }
 /* ── 同步设置弹窗 ── */
 .sync-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
 .sync-modal-overlay.show { display: flex; }
@@ -784,6 +787,7 @@ body.theme-dark .sync-modal .btn-sync-skip { background: #3a3028; color: #b0a48a
         <div class="theme-dot t-dark" data-theme="theme-dark" onclick="setTheme('theme-dark')" title="暗色" style="background:linear-gradient(135deg, #2a241c, #1a1610);"></div>
       </div>
       <div class="sync-dot idle" id="syncDot" data-tip="点击设置云端同步" onclick="openSyncSettings()" title="云端同步"></div>
+      <span class="device-tag" id="deviceTag" title="当前设备类型"></span>
     </div>
 
     <div class="timer-panel">
@@ -1978,6 +1982,17 @@ function togglePreview() {
 
 // 编辑时实时更新预览
 document.addEventListener('DOMContentLoaded', () => {
+  // 设备检测：PC / Phone
+  (function detectDevice() {
+    const ua = navigator.userAgent || '';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+    const tag = document.getElementById('deviceTag');
+    if (tag) {
+      tag.textContent = isMobile ? 'Phone' : 'PC';
+      tag.className = 'device-tag ' + (isMobile ? 'mobile' : 'desktop');
+    }
+  })();
+
   initSync();
   switchLedgerType();
   initBudgetInput();

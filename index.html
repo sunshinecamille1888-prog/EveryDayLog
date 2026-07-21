@@ -663,6 +663,35 @@ body.focus-mode .huangli-panel { display: none !important; }
 /* ── 专注模式隐藏 ── */
 body.focus-mode .month-summary { display: none !important; }
 
+/* ── 云端同步指示器 ── */
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: all 0.2s; position: relative; }
+.sync-dot.synced { background: #4caf50; box-shadow: 0 0 6px rgba(76,175,80,0.4); }
+.sync-dot.syncing { background: #ff9800; animation: sync-pulse 0.8s infinite; }
+.sync-dot.error { background: #f44336; }
+.sync-dot.idle { background: #ccc; }
+@keyframes sync-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.sync-dot::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+.sync-dot:hover::after { opacity: 1; }
+/* ── 同步设置弹窗 ── */
+.sync-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+.sync-modal-overlay.show { display: flex; }
+.sync-modal { background: #fff; border-radius: 18px; padding: 28px 24px; max-width: 380px; width: 90%; box-shadow: 0 12px 40px rgba(0,0,0,0.2); animation: modal-pop 0.25s ease; }
+@keyframes modal-pop { from{transform:scale(0.9);opacity:0;} to{transform:scale(1);opacity:1;} }
+.sync-modal h3 { font-size: 18px; color: var(--c-deep); margin-bottom: 6px; }
+.sync-modal p { font-size: 13px; color: var(--c-text-mid); margin-bottom: 16px; line-height: 1.6; }
+.sync-modal p.sync-modal-hint { font-size: 11px; color: var(--c-light); margin-top: -8px; margin-bottom: 12px; }
+.sync-modal input { width: 100%; border: 2px solid var(--c-bg); border-radius: 12px; padding: 10px 14px; font-size: 14px; outline: none; color: var(--c-text); transition: border 0.2s; box-sizing: border-box; }
+.sync-modal input:focus { border-color: var(--c-accent); }
+.sync-modal .sync-modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+.sync-modal .sync-modal-actions button { border: none; padding: 8px 20px; border-radius: 12px; font-size: 13px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+.sync-modal .btn-sync-confirm { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; }
+.sync-modal .btn-sync-confirm:hover { opacity: 0.9; }
+.sync-modal .btn-sync-skip { background: var(--c-bg); color: var(--c-text-mid); }
+.sync-modal .btn-sync-skip:hover { background: var(--c-bg-mid); }
+body.theme-dark .sync-modal { background: #2a241c; }
+body.theme-dark .sync-modal input { background: #1e1a14; border-color: #3a3028; color: #e8dcc8; }
+body.theme-dark .sync-modal .btn-sync-skip { background: #3a3028; color: #b0a48a; }
+
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
@@ -754,6 +783,7 @@ body.focus-mode .month-summary { display: none !important; }
         <div class="theme-dot t-amber" data-theme="theme-amber" onclick="setTheme('theme-amber')" title="暖橙"></div>
         <div class="theme-dot t-dark" data-theme="theme-dark" onclick="setTheme('theme-dark')" title="暗色" style="background:linear-gradient(135deg, #2a241c, #1a1610);"></div>
       </div>
+      <div class="sync-dot idle" id="syncDot" data-tip="点击设置云端同步" onclick="openSyncSettings()" title="云端同步"></div>
     </div>
 
     <div class="timer-panel">
@@ -968,7 +998,126 @@ function loadEntries() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
   catch(e) { return {}; }
 }
-function saveEntries(entries) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch(e) {} }
+function saveEntries(entries) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch(e) {} if (!_syncBusy) syncToCloud(); }
+var _syncBusy = false;
+
+// ====== 云端同步（JSONBin.io） ======
+var SYNC_API_KEY = '$2a$10$mAQyur2Ycq7ZffqlQofbPuGQ0JDrI8fO911S7AAYBJJBLraapD8QO';
+var SYNC_SECRET_STORAGE = 'sync_secret_key';
+var SYNC_BIN_STORAGE = 'sync_bin_id';
+var syncReady = false;
+
+function getSyncKey() { try { return localStorage.getItem(SYNC_SECRET_STORAGE); } catch(e) { return null; } }
+function getBinId() { try { return localStorage.getItem(SYNC_BIN_STORAGE); } catch(e) { return null; } }
+
+function hashKey(key) { var h=0; for(var i=0;i<key.length;i++){h=((h<<5)-h)+key.charCodeAt(i);h|=0;} return 'dd-sync-'+Math.abs(h).toString(36); }
+
+function updateSyncDot(s) { var d=document.getElementById('syncDot'); if(!d)return; d.className='sync-dot '+s; d.setAttribute('data-tip',{synced:'已同步',syncing:'同步中…',error:'同步失败',idle:'未设置同步'}[s]||''); }
+
+function openSyncSettings() { document.getElementById('syncModalOverlay').classList.add('show'); document.getElementById('syncKeyInput').focus(); }
+
+function skipSync() { try { sessionStorage.setItem('sync_skipped', '1'); } catch(e) {} document.getElementById('syncModalOverlay').classList.remove('show'); }
+
+function confirmSync() {
+  var key = document.getElementById('syncKeyInput').value.trim();
+  if (!key) return;
+  try { localStorage.setItem(SYNC_SECRET_STORAGE, key); } catch(e) {}
+  document.getElementById('syncModalOverlay').classList.remove('show');
+  setupSync(key);
+}
+
+function handleSyncKeyEnter(e) { if (e.key === 'Enter') confirmSync(); }
+
+async function initSync() {
+  if (SYNC_API_KEY.indexOf('YOUR_MASTER_KEY') >= 0) return;
+  document.getElementById('syncKeyInput').addEventListener('keydown', handleSyncKeyEnter);
+  var key = getSyncKey();
+  if (!key && !sessionStorage.getItem('sync_skipped')) {
+    document.getElementById('syncModalOverlay').classList.add('show');
+    return;
+  }
+  if (key) await setupSync(key);
+}
+
+async function setupSync(key) {
+  var binName = hashKey(key);
+  var binId = getBinId();
+  updateSyncDot('syncing');
+  if (!binId) {
+    // 尝试从云端搜索同名 bin
+    try {
+      var resp = await fetch('https://api.jsonbin.io/v3/b', { headers: { 'X-Master-Key': SYNC_API_KEY } });
+      if (resp.ok) {
+        var bins = await resp.json();
+        for (var i = 0; i < bins.length; i++) {
+          if (bins[i].name === binName) { binId = bins[i].id; break; }
+        }
+        if (binId) try { localStorage.setItem(SYNC_BIN_STORAGE, binId); } catch(e) {}
+      }
+    } catch(e) {}
+    // 未找到则创建新 bin
+    if (!binId) {
+      try {
+        var entries = loadEntries();
+        var createResp = await fetch('https://api.jsonbin.io/v3/b', {
+          method: 'POST',
+          headers: { 'X-Master-Key': SYNC_API_KEY, 'Content-Type': 'application/json', 'X-Bin-Name': binName },
+          body: JSON.stringify({ entries: entries, updatedAt: new Date().toISOString() })
+        });
+        if (createResp.ok) {
+          var data = await createResp.json();
+          binId = data.metadata.id;
+          try { localStorage.setItem(SYNC_BIN_STORAGE, binId); } catch(e) {}
+        }
+      } catch(e) { console.warn('Create bin:', e); }
+    }
+  }
+  if (binId) { syncReady = true; await syncFromCloud(); }
+  else updateSyncDot('error');
+}
+
+async function syncFromCloud() {
+  if (!syncReady) return;
+  var binId = getBinId(); if (!binId) return;
+  _syncBusy = true;
+  try {
+    var resp = await fetch('https://api.jsonbin.io/v3/b/' + binId, { headers: { 'X-Master-Key': SYNC_API_KEY } });
+    if (resp.ok) {
+      var data = await resp.json();
+      var cloud = data.record;
+      var local = loadEntries();
+      var merged = {};
+      // 先放云端数据
+      if (cloud.entries) { for (var k in cloud.entries) merged[k] = cloud.entries[k]; }
+      // 本地独有的保留
+      for (var k2 in local) { if (!merged[k2]) merged[k2] = local[k2]; }
+      // 日程同步
+      if (cloud.schedule) { try { localStorage.setItem('daily_doc_schedule', JSON.stringify(cloud.schedule)); } catch(e) {} try { initScheduleUI(); } catch(e) {} }
+      saveEntries(merged);
+      updateSyncDot('synced');
+    }
+  } catch(e) { console.warn('Pull:', e); updateSyncDot('error'); }
+  _syncBusy = false;
+}
+
+async function syncToCloud() {
+  if (!syncReady || _syncBusy) return;
+  var binId = getBinId(); if (!binId) return;
+  _syncBusy = true;
+  updateSyncDot('syncing');
+  try {
+    var entries = loadEntries();
+    var schedule = null;
+    try { schedule = JSON.parse(localStorage.getItem('daily_doc_schedule')); } catch(e) {}
+    await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+      method: 'PUT',
+      headers: { 'X-Master-Key': SYNC_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries: entries, schedule: schedule, updatedAt: new Date().toISOString() })
+    });
+    updateSyncDot('synced');
+  } catch(e) { console.warn('Push:', e); updateSyncDot('error'); }
+  _syncBusy = false;
+}
 
 // ====== 日历 ======
 function renderCalendar(year, month) {
@@ -1783,6 +1932,7 @@ function togglePreview() {
 
 // 编辑时实时更新预览
 document.addEventListener('DOMContentLoaded', () => {
+  initSync();
   switchLedgerType();
   initBudgetInput();
 
@@ -3566,6 +3716,20 @@ setDate = function(d) {
 /* ═══════════════════ 记账模块 end ═══════════════════ */
 
 </script>
+
+<!-- 云端同步设置弹窗 -->
+<div class="sync-modal-overlay" id="syncModalOverlay">
+  <div class="sync-modal">
+    <h3>云端同步设置</h3>
+    <p>输入专属密钥，电脑和手机保持一致即可实时同步数据。</p>
+    <p class="sync-modal-hint">密钥可以是任意字符串，如 my-secret-doc-2026</p>
+    <input type="text" id="syncKeyInput" placeholder="输入你的专属同步密钥" maxlength="50" autocomplete="off">
+    <div class="sync-modal-actions">
+      <button class="btn-sync-skip" onclick="skipSync()">暂不设置</button>
+      <button class="btn-sync-confirm" onclick="confirmSync()">开始同步</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

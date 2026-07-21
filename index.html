@@ -2162,20 +2162,12 @@ function localSync() {
   d.setAttribute('data-tip', '同步中…');
 
   var parts = currentDate.split('-');
-  var fname = '日记备份-' + parts[0] + '-' + parts[1] + '.json';
+  var fname = 'backup-' + parts[0] + '-' + parts[1] + '.json';
 
-  var token = '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';
-  fetch('https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/' + fname, {
-    headers: { 'Authorization': 'Bearer ' + token }
-  })
+  fetch('backup-' + parts[0] + '-' + parts[1] + '.json')
     .then(function(resp) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       return resp.json();
-    })
-    .then(function(data) {
-      var decoded = atob(data.content.replace(/\n/g, ''));
-      return JSON.parse(decoded);
-    })
     .then(function(backup) {
       var importedDiary = 0, importedLedger = 0;
 
@@ -2220,7 +2212,7 @@ function localSync() {
     .catch(function() {
       d.className = 'sync-dot error';
       d.setAttribute('data-tip', '同步失败 · 点击重试');
-      showToast('未找到 ' + fname);
+      showToast('未找到 ' + fname + ' (私有仓库)');
       setTimeout(function() {
         d.className = 'sync-dot idle';
         d.setAttribute('data-tip', '点击导入备份');

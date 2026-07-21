@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "exportedAt": "2026-07-21T04:10:34.364Z",
+  "entries": {
+    "2026-07-21": {
+      "content": "今日三件事",
+      "duration": 0,
+      "templateContents": {
+        "今日三件事": "今日三件事"
+      },
+      "mood": 5
+    },
+    "2026-07-22": {
+      "content": "## 早餐\n\n- 馒头\n\n## 午餐\n\n- \n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
+      "duration": 0,
+      "templateContents": {
+        "今日三件事": "今日目标",
+        "三餐四季": "## 早餐\n\n- 馒头\n\n## 午餐\n\n- \n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-"
+      },
+      "mood": 1
+    }
+  },
+  "ledger": [
+    {
+      "id": 1784606885755.3867,
+      "date": "2026-07-21",
+      "type": "expense",
+      "amount": 1000,
+      "category": "food",
+      "note": "",
+      "time": "12:08"
+    },
+    {
+      "id": 1784606917741.976,
+      "date": "2026-07-22",
+      "type": "expense",
+      "amount": 12,
+      "category": "food",
+      "note": "",
+      "time": "12:08"
+    }
+  ]
+}

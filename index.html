@@ -959,12 +959,17 @@ body.focus-mode .month-summary { display: none !important; }
         </div>
         <div class="export-row" style="margin-top:10px;">
           <span class="schedule-label">定时备份:</span>
-          <input type="number" id="scheduleInterval" min="1" value="24" class="schedule-input">
-          <select id="scheduleUnit" class="schedule-unit">
-            <option value="minutes">分钟</option>
-            <option value="hours" selected>小时</option>
-            <option value="days">天</option>
+          <select id="scheduleMode" class="schedule-unit" onchange="onScheduleModeChange()">
+            <option value="daily">每天</option>
+            <option value="monthly">每月</option>
           </select>
+          <span id="scheduleDayGroup" style="display:none">
+            <input type="number" id="scheduleDay" min="1" max="31" value="1" class="schedule-input" style="width:48px">
+            <span class="schedule-label" style="margin-right:4px">号</span>
+          </span>
+          <span id="scheduleTimeGroup">
+            <input type="time" id="scheduleTime" value="00:00" class="schedule-input" style="width:auto;min-width:70px">
+          </span>
           <button id="scheduleBtn" class="btn-schedule" onclick="toggleSchedule()">启动定时备份</button>
           <span id="scheduleStatus" class="schedule-status"></span>
         </div>
@@ -1144,6 +1149,12 @@ function setDate(dateStr) {
   } else {
     renderCalendar(calYear, calMonth);
   }
+
+  // 日期切换后刷新当前统计图表
+  if (currentStatsTab === 'week') drawWeekChart();
+  else if (currentStatsTab === 'month') drawMonthChart();
+  else if (currentStatsTab === 'mood') drawMoodChart();
+  else if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
 }
 function goToToday() { setDate(getToday()); }
 
@@ -1228,6 +1239,7 @@ function selectDropdownTab(tab, label) {
   }
   // 确保编辑器可见，预览仅在开启时显示
   if (previewOn) {
+    document.getElementById('mdPreview').innerHTML = renderMarkdown(editor.value);
     document.getElementById('mdPreview').style.display = '';
     editor.style.display = 'none';
   } else {
@@ -1363,6 +1375,8 @@ function fmtTimeCompact(t) {
 function updateTimerDisplay() {
   document.getElementById('timerDisplay').textContent = fmtTimeCompact(timerSeconds);
   updateProgress();
+  // 动态更新浏览器标签页标题
+  document.title = isRunning ? '剩余 ' + fmtTimeCompact(timerSeconds) + ' - 每日文档' : '每日文档';
 }
 
 function updateProgress() {
@@ -1429,6 +1443,7 @@ function pauseTimer() {
   clearInterval(timerInterval);
   document.getElementById('btnStart').style.display = '';
   document.getElementById('btnPause').style.display = 'none';
+  document.title = '每日文档';
 }
 
 // ====== 全屏专注模式 ======
@@ -1448,10 +1463,6 @@ function toggleFocusMode() {
 }
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && focusMode) toggleFocusMode();
-  if (e.key === ' ' && !focusMode && document.activeElement !== document.getElementById('editor') && document.activeElement !== document.getElementById('lNote') && document.activeElement !== document.getElementById('lAmount')) {
-    e.preventDefault();
-    if (isRunning) pauseTimer(); else startTimer();
-  }
   // Enter: 快捷记账
   if (e.key === 'Enter' && (document.activeElement === document.getElementById('lNote') || document.activeElement === document.getElementById('lAmount'))) {
     e.preventDefault();
@@ -1603,6 +1614,11 @@ function autoRecord() {
   document.getElementById('dateTimerSummary').textContent = `已计时 ${Math.floor(entry.duration/60)}分${entry.duration%60}秒` + (entry.rounds ? `  ${entry.rounds}轮` : '');
   const d = parseDate(currentDate);
   renderCalendar(d.getFullYear(), d.getMonth());
+  // 计时完成后刷新当前统计图表
+  if (currentStatsTab === 'week') drawWeekChart();
+  else if (currentStatsTab === 'month') drawMonthChart();
+  else if (currentStatsTab === 'mood') drawMoodChart();
+  else if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
   totalElapsed = 0;
 }
 
@@ -1631,6 +1647,11 @@ function recordTime() {
   document.getElementById('dateTimerSummary').textContent = `已计时 ${Math.floor(entry.duration/60)}分${entry.duration%60}秒` + (entry.rounds ? `  ${entry.rounds}轮` : '');
   const d = parseDate(currentDate);
   renderCalendar(d.getFullYear(), d.getMonth());
+  // 手动记录计时后刷新当前统计图表
+  if (currentStatsTab === 'week') drawWeekChart();
+  else if (currentStatsTab === 'month') drawMonthChart();
+  else if (currentStatsTab === 'mood') drawMoodChart();
+  else if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
   showToast(`已记录 ${fmtTimeCompact(totalElapsed)}`);
   totalElapsed = 0;
   timerSeconds = initialSeconds;
@@ -1691,7 +1712,7 @@ function backupDayData() {
 function exportBackup() {
   try {
     var backup = _loadBackup();
-    var fname = '\u65e5\u8bb0\u5907\u4efd-' + _backupMonthKey() + '.json';
+    var fname = 'backup-' + _backupMonthKey() + '.json';
     var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -1878,6 +1899,8 @@ function togglePreview() {
 
 // 编辑时实时更新预览
 document.addEventListener('DOMContentLoaded', () => {
+  // 兜底隐藏编辑器面板（防止 init 中 setDate 因 DOM 未就绪漏执行）
+  try { document.querySelector('.editor-panel').style.display = 'none'; } catch(e) {}
   // 设备检测：PC / Phone
   (function detectDevice() {
     const ua = navigator.userAgent || '';
@@ -1973,9 +1996,9 @@ function switchStatsTab(tab) {
 
 function getWeekDays() {
   const days = [];
-  const today = parseDate(getToday());
-  const dow = today.getDay();
-  const monday = new Date(today); monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  const refDate = parseDate(currentDate);
+  const dow = refDate.getDay();
+  const monday = new Date(refDate); monday.setDate(refDate.getDate() - (dow === 0 ? 6 : dow - 1));
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
     days.push(fmtDate(d));
@@ -1985,8 +2008,8 @@ function getWeekDays() {
 
 function getMonthDays() {
   const days = [];
-  const today = parseDate(getToday());
-  const y = today.getFullYear(), m = today.getMonth();
+  const refDate = parseDate(currentDate);
+  const y = refDate.getFullYear(), m = refDate.getMonth();
   const dim = new Date(y, m+1, 0).getDate();
   for (let d = 1; d <= dim; d++) days.push(`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
   return days;
@@ -2154,71 +2177,101 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'),2000);
 }
 
-// ====== 本地同步刷新（自动导入同级目录备份 JSON） ======
+// ====== 合并备份数据（日记 + 账本） ======
+function mergeBackupData(backup) {
+  var importedDiary = 0, importedLedger = 0;
+  if (backup.entries) {
+    var entries = loadEntries();
+    var changed = false;
+    Object.keys(backup.entries).forEach(function(k) {
+      if (!entries[k] || JSON.stringify(entries[k]) !== JSON.stringify(backup.entries[k])) {
+        entries[k] = backup.entries[k];
+        importedDiary++;
+        changed = true;
+      }
+    });
+    if (changed) saveEntries(entries);
+  }
+  if (backup.ledger && Array.isArray(backup.ledger)) {
+    var localLedger = getLedgerData();
+    var idMap = {};
+    localLedger.forEach(function(t) { idMap[t.id] = true; });
+    var newTxns = backup.ledger.filter(function(t) { return !idMap[t.id]; });
+    if (newTxns.length) {
+      saveLedgerData(localLedger.concat(newTxns));
+      importedLedger = newTxns.length;
+    }
+  }
+  if (typeof setDate === 'function') setDate(currentDate);
+  if (typeof calYear !== 'undefined') renderCalendar(calYear, calMonth);
+  if (typeof renderLedger === 'function') renderLedger();
+  return { diary: importedDiary, ledger: importedLedger };
+}
+
+// ====== 本地同步刷新（fetch 同目录备份） ======
 function localSync() {
   var d = document.getElementById('syncDot');
   if (!d) return;
   d.className = 'sync-dot syncing';
   d.setAttribute('data-tip', '同步中…');
-
   var parts = currentDate.split('-');
   var fname = 'backup-' + parts[0] + '-' + parts[1] + '.json';
-
-  fetch('backup-' + parts[0] + '-' + parts[1] + '.json')
+  fetch(fname)
     .then(function(resp) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       return resp.json();
+    })
     .then(function(backup) {
-      var importedDiary = 0, importedLedger = 0;
-
-      // 合并日记数据
-      if (backup.entries) {
-        var entries = loadEntries();
-        var changed = false;
-        Object.keys(backup.entries).forEach(function(k) {
-          if (!entries[k] || JSON.stringify(entries[k]) !== JSON.stringify(backup.entries[k])) {
-            entries[k] = backup.entries[k];
-            importedDiary++;
-            changed = true;
-          }
-        });
-        if (changed) saveEntries(entries);
-      }
-
-      // 合并账本数据（按 id 去重）
-      if (backup.ledger && Array.isArray(backup.ledger)) {
-        var localLedger = getLedgerData();
-        var idMap = {};
-        localLedger.forEach(function(t) { idMap[t.id] = true; });
-        var newTxns = backup.ledger.filter(function(t) { return !idMap[t.id]; });
-        if (newTxns.length) {
-          saveLedgerData(localLedger.concat(newTxns));
-          importedLedger = newTxns.length;
-        }
-      }
-
-      // 刷新视图
-      if (typeof setDate === 'function') setDate(currentDate);
-      if (typeof calYear !== 'undefined') renderCalendar(calYear, calMonth);
-      if (typeof renderLedger === 'function') renderLedger();
-
+      var r = mergeBackupData(backup);
       d.className = 'sync-dot synced';
       d.setAttribute('data-tip', '已同步 · 点击刷新');
       var msg = '已同步';
-      if (importedDiary) msg += '，导入 ' + importedDiary + ' 天日记';
-      if (importedLedger) msg += '，导入 ' + importedLedger + ' 条账目';
+      if (r.diary) msg += '，导入 ' + r.diary + ' 天日记';
+      if (r.ledger) msg += '，导入 ' + r.ledger + ' 条账目';
       showToast(msg);
     })
     .catch(function() {
       d.className = 'sync-dot error';
       d.setAttribute('data-tip', '同步失败 · 点击重试');
-      showToast('未找到 ' + fname + ' (私有仓库)');
+      showToast('未找到 ' + fname);
       setTimeout(function() {
         d.className = 'sync-dot idle';
         d.setAttribute('data-tip', '点击导入备份');
       }, 3000);
     });
 }
+
+// ====== 拖拽导入备份 JSON ======
+(function() {
+  var ol = document.createElement('div');
+  ol.id = 'dropOverlay';
+  ol.innerHTML = '<div class="drop-msg">拖放备份文件到这里</div>';
+  ol.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);justify-content:center;align-items:center;pointer-events:none';
+  document.body.appendChild(ol);
+  var dropMsg = ol.querySelector('.drop-msg');
+  dropMsg.style.cssText = 'color:#fff;font-size:20px;padding:30px 50px;border:3px dashed rgba(255,255,255,.5);border-radius:12px;background:rgba(0,0,0,.4)';
+  var cnt = 0;
+  function show() { cnt++; ol.style.display='flex'; }
+  function hide() { cnt--; if(cnt<=0){cnt=0;ol.style.display='none';} }
+  document.body.addEventListener('dragover', function(e) { e.preventDefault(); show(); });
+  document.body.addEventListener('dragleave', function() { hide(); });
+  document.body.addEventListener('drop', function(e) {
+    e.preventDefault(); cnt = 0; ol.style.display = 'none';
+    var file = e.dataTransfer.files[0];
+    if (!file || !/\.json$/i.test(file.name)) { showToast('请拖入 JSON 备份文件'); return; }
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var r = mergeBackupData(JSON.parse(ev.target.result));
+        var msg = '已导入 ' + file.name;
+        if (r.diary) msg += ' (' + r.diary + ' 天日记)';
+        if (r.ledger) msg += ' (' + r.ledger + ' 条账目)';
+        showToast(msg);
+      } catch(ex) { showToast('JSON 解析失败'); }
+    };
+    reader.readAsText(file);
+  });
+})();
 
 // 初始化
 try {
@@ -2970,8 +3023,8 @@ function setMood(val) {
 function drawMoodChart() {
   if (!statsCtx) return;
   const entries = loadEntries();
-  const today = parseDate(getToday());
-  const y = today.getFullYear(), m = today.getMonth();
+  const refDate = parseDate(currentDate);
+  const y = refDate.getFullYear(), m = refDate.getMonth();
   const dim = new Date(y, m+1, 0).getDate();
   const moodMap = {5:'😊',4:'🤩',3:'😐',2:'😢',1:'😡'};
   const data = [];
@@ -3039,13 +3092,17 @@ function drawMoodChart() {
     statsCtx.beginPath(); statsCtx.arc(p.x, p.yy, 5, 0, Math.PI*2); statsCtx.fill();
     statsCtx.fillStyle = '#e91e63';
     statsCtx.beginPath(); statsCtx.arc(p.x, p.yy, 3, 0, Math.PI*2); statsCtx.fill();
-    // 日期标签 (每隔几天)
-    if (validPoints.length <= 10 || p.day % 3 === 0) {
-      statsCtx.fillStyle = '#6d4c5e'; statsCtx.font = '10px -apple-system, sans-serif';
-      statsCtx.textAlign = 'center';
-      statsCtx.fillText(p.day, p.x, pad.top + chartH + 14);
-    }
   });
+
+  // X轴日期标签（覆盖所有日期，不依赖心情数据点）
+  statsCtx.fillStyle = '#6d4c5e'; statsCtx.font = '10px -apple-system, sans-serif';
+  statsCtx.textAlign = 'center';
+  for (let i = 1; i <= dim; i++) {
+    if (i === 1 || i % 5 === 0 || i === dim) {
+      const x = pad.left + ((i - 1) / (dim - 1)) * chartW;
+      statsCtx.fillText(i, x, pad.top + chartH + 14);
+    }
+  }
 }
 
 // ====== 月视图摘要 ======
@@ -3156,8 +3213,9 @@ function renderLedger() {
 
   let incomeTotal = 0, expenseTotal = 0;
   txns.forEach(t => {
-    if (t.type === 'income') incomeTotal += t.amount;
-    else expenseTotal += t.amount;
+    const amt = Number(t.amount) || 0;
+    if (t.type === 'income') incomeTotal += amt;
+    else expenseTotal += amt;
   });
 
   document.getElementById('lsIncome').textContent = `收入 ¥${incomeTotal.toFixed(2)}`;
@@ -3510,7 +3568,7 @@ function drawLedgerTrend() {
 
 function updateTrendCards() {
   const cards = document.getElementById('trendCards');
-  const today = getToday();
+  const today = currentDate;
   const txns = getLedgerData().filter(t => t.type === 'expense');
 
   // 本周（周一到今天）
@@ -3604,8 +3662,20 @@ function exportFullBackup() {
   const entries = loadEntries();
   const ledger = getLedgerData();
   const backup = { version: 1, exportedAt: new Date().toISOString(), entries, ledger };
-  downloadFile(JSON.stringify(backup, null, 2), `日记备份-${getToday()}.json`, 'application/json;charset=utf-8');
+  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + new Date().getFullYear() + '.json', 'application/json;charset=utf-8');
   showToast('完整备份已导出');
+}
+
+/* 月度归档：导出上月 + 历史全量数据 → backup-YYYY.json */
+function exportMonthlyArchive() {
+  var now = new Date();
+  var prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var y = prev.getFullYear();
+  var entries = loadEntries();
+  var ledger = getLedgerData();
+  var backup = { version: 1, exportedAt: now.toISOString(), month: y + '-' + String(prev.getMonth() + 1).padStart(2, '0'), entries, ledger };
+  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + y + '.json', 'application/json;charset=utf-8');
+  showToast('月度归档已导出: backup-' + y + '.json');
 }
 
 async function importBackupFile(input) {
@@ -3659,46 +3729,104 @@ function loadScheduleConfig() {
 function saveScheduleConfig(cfg) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(cfg)); } catch(e) {} }
 function clearScheduleConfig() { try { localStorage.removeItem(SCHEDULE_KEY); } catch(e) {} }
 
-function getScheduleMs(cfg) {
-  const { interval, unit } = cfg;
-  if (unit === 'minutes') return interval * 60 * 1000;
-  if (unit === 'hours') return interval * 3600 * 1000;
-  return interval * 86400 * 1000;
+/* 计算距离下一个指定时刻的毫秒数（每天） */
+function msUntilNextDaily(timeStr) {
+  var parts = timeStr.split(':');
+  var h = parseInt(parts[0]), m = parseInt(parts[1]);
+  var now = new Date();
+  var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  return target.getTime() - now.getTime();
+}
+
+/* 计算距离下一个指定日号 + 时刻的毫秒数，自动处理月末边界（31 号二月回退到 28/29） */
+function msUntilNextMonthly(day, timeStr) {
+  var parts = timeStr.split(':');
+  var h = parseInt(parts[0]), m = parseInt(parts[1]);
+  var now = new Date();
+  var y = now.getFullYear(), mo = now.getMonth();
+  var target = new Date(y, mo, 1, h, m, 0, 0);
+  // 取目标月的最后一天，日号不能超出
+  var lastDay = new Date(y, mo + 1, 0).getDate();
+  var d = Math.min(day, lastDay);
+  target.setDate(d);
+  if (target <= now) {
+    mo++;
+    if (mo > 11) { mo = 0; y++; }
+    target = new Date(y, mo, 1, h, m, 0, 0);
+    lastDay = new Date(y, mo + 1, 0).getDate();
+    target.setDate(Math.min(day, lastDay));
+  }
+  return target.getTime() - now.getTime();
 }
 
 function startScheduleTimer(cfg) {
   stopScheduleTimer();
-  const ms = getScheduleMs(cfg);
-  _scheduleTimer = setInterval(() => {
-    exportFullBackup();
-  }, ms);
+  if (cfg.type === 'daily') {
+    function scheduleNext() {
+      _scheduleTimer = setTimeout(function() {
+        exportFullBackup();
+        scheduleNext();
+      }, 24 * 3600 * 1000);
+    }
+    _scheduleTimer = setTimeout(function() {
+      exportFullBackup();
+      scheduleNext();
+    }, msUntilNextDaily(cfg.time));
+  } else {
+    var day = cfg.day || 1;
+    function scheduleNext() {
+      _scheduleTimer = setTimeout(function() {
+        exportMonthlyArchive();
+        scheduleNext();
+      }, msUntilNextMonthly(day, cfg.time));
+    }
+    _scheduleTimer = setTimeout(function() {
+      exportMonthlyArchive();
+      scheduleNext();
+    }, msUntilNextMonthly(day, cfg.time));
+  }
 }
 
 function stopScheduleTimer() {
-  if (_scheduleTimer) { clearInterval(_scheduleTimer); _scheduleTimer = null; }
+  if (_scheduleTimer) { clearInterval(_scheduleTimer); clearTimeout(_scheduleTimer); _scheduleTimer = null; }
+}
+
+function onScheduleModeChange() {
+  var mode = document.getElementById('scheduleMode').value;
+  document.getElementById('scheduleDayGroup').style.display = mode === 'monthly' ? '' : 'none';
 }
 
 function initScheduleUI() {
-  const cfg = loadScheduleConfig();
-  const btn = document.getElementById('scheduleBtn');
-  const status = document.getElementById('scheduleStatus');
-  const intervalEl = document.getElementById('scheduleInterval');
-  const unitEl = document.getElementById('scheduleUnit');
+  var cfg = loadScheduleConfig();
+  var btn = document.getElementById('scheduleBtn');
+  var status = document.getElementById('scheduleStatus');
+  var modeEl = document.getElementById('scheduleMode');
+  var dayEl = document.getElementById('scheduleDay');
+  var timeEl = document.getElementById('scheduleTime');
   if (!btn || !status) return;
+
   if (cfg) {
-    intervalEl.value = cfg.interval;
-    unitEl.value = cfg.unit;
-    intervalEl.disabled = true;
-    unitEl.disabled = true;
+    modeEl.value = cfg.type;
+    modeEl.disabled = true;
+    onScheduleModeChange();
+    timeEl.value = cfg.time;
+    timeEl.disabled = true;
     btn.textContent = '停止定时备份';
     btn.classList.add('stop');
-    const unitLabel = cfg.unit==='minutes'?'分钟':cfg.unit==='hours'?'小时':'天';
-    status.textContent = `运行中 · 每 ${cfg.interval} ${unitLabel}`;
+    if (cfg.type === 'daily') {
+      status.textContent = '运行中 · 每天 ' + cfg.time;
+    } else {
+      dayEl.value = cfg.day || 1;
+      dayEl.disabled = true;
+      status.textContent = '运行中 · 每月' + (cfg.day || 1) + '号 ' + cfg.time;
+    }
     startScheduleTimer(cfg);
   } else {
     stopScheduleTimer();
-    intervalEl.disabled = false;
-    unitEl.disabled = false;
+    modeEl.disabled = false;
+    dayEl.disabled = false;
+    timeEl.disabled = false;
     btn.textContent = '启动定时备份';
     btn.classList.remove('stop');
     status.textContent = '';
@@ -3706,21 +3834,25 @@ function initScheduleUI() {
 }
 
 function toggleSchedule() {
-  const cfg = loadScheduleConfig();
+  var cfg = loadScheduleConfig();
   if (cfg) {
     clearScheduleConfig();
     stopScheduleTimer();
     showToast('定时备份已停止');
     initScheduleUI();
   } else {
-    const interval = parseInt(document.getElementById('scheduleInterval').value);
-    const unit = document.getElementById('scheduleUnit').value;
-    if (isNaN(interval) || interval < 1) { showToast('请输入有效的间隔数值'); return; }
-    if (unit === 'minutes' && interval < 1) { showToast('最小间隔为 1 分钟'); return; }
-    const newCfg = { interval, unit };
+    var mode = document.getElementById('scheduleMode').value;
+    var time = document.getElementById('scheduleTime').value || '00:00';
+    var newCfg;
+    if (mode === 'daily') {
+      newCfg = { type: 'daily', time: time };
+      showToast('定时备份已启动 · 每天 ' + time);
+    } else {
+      var day = parseInt(document.getElementById('scheduleDay').value) || 1;
+      newCfg = { type: 'monthly', day: day, time: time };
+      showToast('定时备份已启动 · 每月' + day + '号 ' + time);
+    }
     saveScheduleConfig(newCfg);
-    const unitLabel = unit==='minutes'?'分钟':unit==='hours'?'小时':'天';
-    showToast(`定时备份已启动 · 每 ${interval} ${unitLabel}`);
     initScheduleUI();
   }
 }

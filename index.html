@@ -1619,6 +1619,7 @@ function autoRecord() {
   else if (currentStatsTab === 'month') drawMonthChart();
   else if (currentStatsTab === 'mood') drawMoodChart();
   else if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
+  backupDayData();
   totalElapsed = 0;
 }
 
@@ -1653,6 +1654,7 @@ function recordTime() {
   else if (currentStatsTab === 'mood') drawMoodChart();
   else if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
   showToast(`已记录 ${fmtTimeCompact(totalElapsed)}`);
+  backupDayData();
   totalElapsed = 0;
   timerSeconds = initialSeconds;
   document.getElementById('timerDone').style.display = 'none';
@@ -1676,7 +1678,8 @@ function updateSessionInfo(entry) {
 // 备份目录句柄缓存（通过 File System Access API 获取并持久化到 IndexedDB）
 var _backupDirHandleCache = null;
 
-async function _getBackupDirHandle() {
+// 仅从缓存（内存 + IndexedDB）恢复句柄，不弹窗。无有效句柄时返回 null。
+async function _getCachedDirHandle() {
   if (_backupDirHandleCache) {
     try {
       var opts = { mode: 'readwrite' };
@@ -1698,15 +1701,23 @@ async function _getBackupDirHandle() {
       req.onerror = function() { resolve(null); };
     });
     if (storedHandle) {
-      var opts = { mode: 'readwrite' };
-      if (await storedHandle.queryPermission(opts) === 'granted') {
+      var opts2 = { mode: 'readwrite' };
+      if (await storedHandle.queryPermission(opts2) === 'granted') {
         _backupDirHandleCache = storedHandle;
         localStorage.setItem('backup_dir_handle', '1');
         return storedHandle;
       }
     }
   } catch(e) {}
-  // 首次选择目录
+  return null;
+}
+
+// 用户主动触发时调用：弹出目录选择器 + 写入 IndexedDB。
+async function _requestBackupDir() {
+  // 先尝试缓存
+  var cached = await _getCachedDirHandle();
+  if (cached) return cached;
+  // 无缓存则弹窗选择
   if (!window.showDirectoryPicker) {
     console.warn('File System Access API not available');
     return null;
@@ -1716,13 +1727,13 @@ async function _getBackupDirHandle() {
     _backupDirHandleCache = handle;
     localStorage.setItem('backup_dir_handle', '1');
     // 持久化到 IndexedDB
-    var db2 = await new Promise(function(resolve, reject) {
+    var db = await new Promise(function(resolve, reject) {
       var req = indexedDB.open('daily_doc_backup_dir', 1);
       req.onupgradeneeded = function() { req.result.createObjectStore('handles'); };
       req.onsuccess = function() { resolve(req.result); };
       req.onerror = function() { reject(req.error); };
     });
-    var tx = db2.transaction('handles', 'readwrite');
+    var tx = db.transaction('handles', 'readwrite');
     tx.objectStore('handles').put(handle, 'backup_dir_handle');
     return handle;
   } catch(e) {
@@ -1753,9 +1764,9 @@ function _loadBackup() {
 async function _saveBackup(backup) {
   // 兜底：localStorage 始终保留
   try { localStorage.setItem(_backupStorageKey(), JSON.stringify(backup)); } catch(e) {}
-  // 写入 JSON 文件到用户选定的备份目录
+  // 仅当句柄已缓存时静默写入文件，不弹窗
   try {
-    var dirHandle = await _getBackupDirHandle();
+    var dirHandle = await _getCachedDirHandle();
     if (dirHandle) {
       var fname = 'backup-' + _backupMonthKey() + '.json';
       var fileHandle = await dirHandle.getFileHandle(fname, { create: true });

@@ -1671,7 +1671,71 @@ function updateSessionInfo(entry) {
   info.textContent = parts.join(' | ');
 }
 
-// ====== 本地备份（localStorage 自动写入 + 导出下载 JSON） ======
+// ====== 本地备份（localStorage 自动写入 + JSON 文件 + Git 管理） ======
+
+// 备份目录句柄缓存（通过 File System Access API 获取并持久化到 IndexedDB）
+var _backupDirHandleCache = null;
+
+async function _getBackupDirHandle() {
+  if (_backupDirHandleCache) {
+    try {
+      var opts = { mode: 'readwrite' };
+      if (await _backupDirHandleCache.queryPermission(opts) === 'granted') return _backupDirHandleCache;
+    } catch(e) {}
+  }
+  // 从 IndexedDB 恢复句柄
+  try {
+    var db = await new Promise(function(resolve, reject) {
+      var req = indexedDB.open('daily_doc_backup_dir', 1);
+      req.onupgradeneeded = function() { req.result.createObjectStore('handles'); };
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function() { reject(req.error); };
+    });
+    var storedHandle = await new Promise(function(resolve) {
+      var tx = db.transaction('handles', 'readonly');
+      var req = tx.objectStore('handles').get('backup_dir_handle');
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function() { resolve(null); };
+    });
+    if (storedHandle) {
+      var opts = { mode: 'readwrite' };
+      if (await storedHandle.queryPermission(opts) === 'granted') {
+        _backupDirHandleCache = storedHandle;
+        localStorage.setItem('backup_dir_handle', '1');
+        return storedHandle;
+      }
+    }
+  } catch(e) {}
+  // 首次选择目录
+  if (!window.showDirectoryPicker) {
+    console.warn('File System Access API not available');
+    return null;
+  }
+  try {
+    var handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    _backupDirHandleCache = handle;
+    localStorage.setItem('backup_dir_handle', '1');
+    // 持久化到 IndexedDB
+    var db2 = await new Promise(function(resolve, reject) {
+      var req = indexedDB.open('daily_doc_backup_dir', 1);
+      req.onupgradeneeded = function() { req.result.createObjectStore('handles'); };
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function() { reject(req.error); };
+    });
+    var tx = db2.transaction('handles', 'readwrite');
+    tx.objectStore('handles').put(handle, 'backup_dir_handle');
+    return handle;
+  } catch(e) {
+    console.warn('Directory selection cancelled:', e);
+    return null;
+  }
+}
+
+// 设置 git 操作标志位，供外部脚本读取并执行 git add + commit + push
+function _triggerGitAction() {
+  try { localStorage.setItem('git_action', 'commit_and_push'); } catch(e) {}
+}
+
 function _backupMonthKey() {
   var parts = currentDate.split('-');
   return parts[0] + '-' + parts[1];
@@ -1686,11 +1750,23 @@ function _loadBackup() {
   catch(e) { return { entries: {}, ledger: [] }; }
 }
 
-function _saveBackup(backup) {
+async function _saveBackup(backup) {
+  // 兜底：localStorage 始终保留
   try { localStorage.setItem(_backupStorageKey(), JSON.stringify(backup)); } catch(e) {}
+  // 写入 JSON 文件到用户选定的备份目录
+  try {
+    var dirHandle = await _getBackupDirHandle();
+    if (dirHandle) {
+      var fname = 'backup-' + _backupMonthKey() + '.json';
+      var fileHandle = await dirHandle.getFileHandle(fname, { create: true });
+      var writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(backup, null, 2));
+      await writable.close();
+    }
+  } catch(e) { console.warn('JSON file backup failed:', e); }
 }
 
-function backupDayData() {
+async function backupDayData() {
   try {
     var backup = _loadBackup();
 
@@ -1705,7 +1781,9 @@ function backupDayData() {
     backup.ledger = backup.ledger.concat(todayLedger);
     backup._updatedAt = new Date().toISOString();
 
-    _saveBackup(backup);
+    await _saveBackup(backup);
+    // 触发 git commit + push
+    _triggerGitAction();
   } catch(e) {}
 }
 
@@ -1723,6 +1801,8 @@ function exportBackup() {
     document.body.removeChild(a);
     setTimeout(function() { URL.revokeObjectURL(url); }, 100);
     showToast('\u5df2\u5bfc\u51fa ' + fname);
+    // 触发 git commit + push
+    _triggerGitAction();
   } catch(e) { showToast('\u5bfc\u51fa\u5931\u8d25'); }
 }
 
@@ -2229,6 +2309,8 @@ function localSync() {
       if (r.diary) msg += '，导入 ' + r.diary + ' 天日记';
       if (r.ledger) msg += '，导入 ' + r.ledger + ' 条账目';
       showToast(msg);
+      // 触发 git commit + push
+      _triggerGitAction();
     })
     .catch(function() {
       d.className = 'sync-dot error';
@@ -3664,6 +3746,8 @@ function exportFullBackup() {
   const backup = { version: 1, exportedAt: new Date().toISOString(), entries, ledger };
   downloadFile(JSON.stringify(backup, null, 2), 'backup-' + new Date().getFullYear() + '.json', 'application/json;charset=utf-8');
   showToast('完整备份已导出');
+  // 触发 git commit + push
+  _triggerGitAction();
 }
 
 /* 月度归档：导出上月 + 历史全量数据 → backup-YYYY.json */

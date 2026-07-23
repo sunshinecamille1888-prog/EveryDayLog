@@ -49,6 +49,14 @@
         "今日三件事": "qianyirimmmmm"
       },
       "mood": 5
+    },
+    "2026-06-01": {
+      "content": "六月",
+      "duration": 0,
+      "templateContents": {
+        "学习笔记": "六月"
+      },
+      "mood": 5
     }
   },
   "ledger": [
@@ -105,9 +113,18 @@
       "category": "food",
       "note": "",
       "time": "17:39"
+    },
+    {
+      "id": 1784800201036.836,
+      "date": "2026-06-01",
+      "type": "expense",
+      "amount": 8888888,
+      "category": "food",
+      "note": "",
+      "time": "17:50"
     }
   ],
-  "_updatedAt": "2026-07-23T09:49:24.437Z",
+  "_updatedAt": "2026-07-23T09:50:31.284Z",
   "version": 1,
-  "exportedAt": "2026-07-23T09:49:24.437Z"
+  "exportedAt": "2026-07-23T09:50:31.284Z"
 }

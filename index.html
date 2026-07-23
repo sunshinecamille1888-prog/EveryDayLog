@@ -2410,10 +2410,32 @@ function _isLocalhost() {
   return h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0' || h === '::1' || h === '[::1]' || h === '';
 }
 
+// 获取 Git 同步端点：优先 window.GIT_SYNC_URL，否则回退到相对路径 /api/git-sync
+// 手机端走 Workers 端点
+window.GIT_SYNC_URL = 'https://muddy-poetry-5e1d.sunshinecamille1888.workers.dev/api/git-sync';
+function _gitSyncUrl() {
+  return window.GIT_SYNC_URL || '/api/git-sync';
+}
+
+function _gitSyncFetch(body) {
+  return fetch(_gitSyncUrl(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(resp) {
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.json();
+  });
+}
+
+function _canGitSync() {
+  return !!window.GIT_SYNC_URL || _isLocalhost();
+}
+
 function gitSyncToGitHub() {
   var btn = document.getElementById('gitSyncBtn');
   if (!btn) return;
-  if (!_isLocalhost()) { showToast('请在本地服务器使用同步功能'); return; }
+  if (!_canGitSync()) { showToast('请配置同步端点（window.GIT_SYNC_URL）或使用本地服务器'); return; }
 
   var key = _backupStorageKey();
   var raw;
@@ -2429,15 +2451,7 @@ function gitSyncToGitHub() {
   var monthKey = _backupMonthKey();
   var filename = 'backup-' + monthKey + '.json';
 
-  fetch(location.origin + '/api/git-sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename: filename, content: raw })
-  })
-  .then(function(resp) {
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    return resp.json();
-  })
+  _gitSyncFetch({ filename: filename, content: raw })
   .then(function() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');
@@ -2466,14 +2480,14 @@ function _checkGitSyncBtn() {
   var gitBtn = document.getElementById('gitSyncBtn');
   var fullBtn = document.getElementById('fullBackupBtn');
 
-  // 非本地环境：禁用所有同步按钮
-  if (!_isLocalhost()) {
-    if (gitBtn) { gitBtn.disabled = true; gitBtn.title = '请在本地服务器使用同步功能（bash serve.sh）'; }
-    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请在本地服务器使用同步功能（bash serve.sh）'; }
+  // 既非本地也非 Workers：禁用所有同步按钮
+  if (!_canGitSync()) {
+    if (gitBtn) { gitBtn.disabled = true; gitBtn.title = '请配置同步端点（window.GIT_SYNC_URL）或使用本地服务器（bash serve.sh）'; }
+    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请配置同步端点（window.GIT_SYNC_URL）或使用本地服务器（bash serve.sh）'; }
     return;
   }
 
-  // 完整备份按钮：本地环境始终可用
+  // 完整备份按钮：始终可用
   if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
 
   // 本月备份按钮：检查当月数据
@@ -3909,7 +3923,7 @@ function escHtml(s) { const d = document.createElement('div'); d.textContent = s
 
 /* ═══════════════════ 完整备份 ═══════════════════ */
 function exportFullBackup() {
-  if (!_isLocalhost()) { showToast('请在本地服务器使用同步功能'); return; }
+  if (!_canGitSync()) { showToast('请配置同步端点（window.GIT_SYNC_URL）或使用本地服务器'); return; }
 
   var btn = document.getElementById('fullBackupBtn');
   if (!btn) return;
@@ -3925,15 +3939,7 @@ function exportFullBackup() {
   btn.textContent = '同步中...';
   btn.disabled = true;
 
-  fetch(location.origin + '/api/git-sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename: filename, content: content })
-  })
-  .then(function(resp) {
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    return resp.json();
-  })
+  _gitSyncFetch({ filename: filename, content: content })
   .then(function() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');

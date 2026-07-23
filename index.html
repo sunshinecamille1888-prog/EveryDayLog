@@ -968,7 +968,7 @@ body.focus-mode .month-summary { display: none !important; }
           <button class="btn-git-sync" id="gitSyncBtn" onclick="gitSyncToGitHub()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
-          <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_...)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" onchange="saveGitToken()">
+          <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_...)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" oninput="saveGitToken()" onchange="saveGitToken()" autocomplete="off">
           <span class="schedule-label" style="margin-left:4px;font-size:10px;color:#888;cursor:pointer;" onclick="showGitTokenHelp()">?</span>
         </div>
         <div class="export-row" style="margin-top:10px;">
@@ -2425,7 +2425,12 @@ function saveGitToken() {
     if (v) localStorage.setItem(GIT_TOKEN_KEY, v);
     else localStorage.removeItem(GIT_TOKEN_KEY);
   } catch(e) {}
-  _checkGitSyncBtn();
+  // 防抖：用 setTimeout 聚合频繁触发（如 oninput），避免连续写入
+  if (saveGitToken._timer) clearTimeout(saveGitToken._timer);
+  saveGitToken._timer = setTimeout(function() {
+    saveGitToken._timer = null;
+    _checkGitSyncBtn();
+  }, 300);
 }
 
 function showGitTokenHelp() {
@@ -2607,11 +2612,12 @@ function gitSyncToGitHub() {
 }
 
 function _checkGitSyncBtn() {
-  // 回填已保存的 token
+  // 始终从 localStorage 回填 token，确保输入框与存储同步
   var tokenInput = document.getElementById('gitTokenInput');
-  if (tokenInput && !tokenInput.value) {
+  if (tokenInput) {
     var saved = _getGitToken();
-    if (saved) tokenInput.value = saved;
+    if (saved && tokenInput.value !== saved) tokenInput.value = saved;
+    else if (!saved && tokenInput.value) tokenInput.value = '';
   }
 
   var gitBtn = document.getElementById('gitSyncBtn');

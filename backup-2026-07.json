@@ -17,6 +17,14 @@
         "三餐四季": "## 早餐\n呜呜呜呜呜呜\n- \n\n## 午餐\n\n- \n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-"
       },
       "mood": 5
+    },
+    "2026-07-21": {
+      "content": "qianyirimmmmm",
+      "duration": 0,
+      "templateContents": {
+        "今日三件事": "qianyirimmmmm"
+      },
+      "mood": 5
     }
   },
   "ledger": [
@@ -37,7 +45,16 @@
       "category": "food",
       "note": "午餐",
       "time": "14:56"
+    },
+    {
+      "id": 1784799580858.8228,
+      "date": "2026-07-21",
+      "type": "expense",
+      "amount": 3333333,
+      "category": "food",
+      "note": "",
+      "time": "17:39"
     }
   ],
-  "_updatedAt": "2026-07-23T09:39:05.029Z"
+  "_updatedAt": "2026-07-23T09:39:45.242Z"
 }

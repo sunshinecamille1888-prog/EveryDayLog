@@ -2560,14 +2560,30 @@ function gitSyncToGitHub() {
   if (!btn) return;
   if (!_canGitSync()) { showToast('请先输入 GitHub Token'); return; }
 
-  var key = _backupStorageKey();
-  var raw;
-  try { raw = localStorage.getItem(key); } catch(e) { raw = null; }
-  if (!raw) { showToast('暂无当月备份数据'); return; }
+  // 先同步最新 entries → backup，确保累积时间等数据是最新的
+  try {
+    var freshEntries = loadEntries();
+    var monthPrefix = _backupMonthKey();
+    var backup = _loadBackup();
+    Object.keys(freshEntries).forEach(function(d) {
+      if (d && d.indexOf(monthPrefix) === 0 && freshEntries[d]) {
+        backup.entries[d] = freshEntries[d];
+      }
+    });
+    // ledger 也刷新当天数据
+    var allLedger = getLedgerData();
+    var todayLedger = allLedger.filter(function(t) { return t.date === currentDate; });
+    backup.ledger = backup.ledger.filter(function(t) { return t.date !== currentDate; });
+    backup.ledger = backup.ledger.concat(todayLedger);
+    backup._updatedAt = new Date().toISOString();
+    _saveBackup(backup);
+  } catch(e) {}
 
-  var localData;
-  try { localData = JSON.parse(raw); } catch(e) { localData = null; }
-  if (!localData) { showToast('本地备份数据解析失败'); return; }
+  var key = _backupStorageKey();
+  var localData = _loadBackup();
+  if (!localData || !localData.entries || Object.keys(localData.entries).length === 0) {
+    showToast('暂无当月备份数据'); return;
+  }
 
   // 进入同步中状态
   btn.classList.add('syncing');

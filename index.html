@@ -2067,7 +2067,7 @@ let currentStatsTab = 'week';
   // 创建 tooltip DOM 元素
   const tip = document.createElement('div');
   tip.id = 'barTooltip';
-  tip.style.cssText = 'position:absolute;display:none;background:rgba(0,0,0,0.78);color:#fff;font-size:12px;padding:4px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;font-family:-apple-system,sans-serif;';
+  tip.style.cssText = 'position:absolute;display:none;background:rgba(51,51,51,0.92);color:#fff;font-size:11px;padding:5px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;font-family:-apple-system,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
   statsCanvas.parentElement.style.position = 'relative';
   statsCanvas.parentElement.appendChild(tip);
 
@@ -2302,6 +2302,32 @@ function drawHeatmap() {
       }
       grid.appendChild(cell);
     }
+  });
+
+  // 自定义 tooltip（替代原生 title）
+  const container = document.getElementById('heatmapContainer');
+  let hmTip = container.querySelector('#heatmapTooltip');
+  if (!hmTip) {
+    hmTip = document.createElement('div');
+    hmTip.id = 'heatmapTooltip';
+    hmTip.style.cssText = 'position:absolute;display:none;background:rgba(51,51,51,0.92);color:#fff;font-size:11px;padding:5px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:100;font-family:-apple-system,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    container.style.position = 'relative';
+    container.appendChild(hmTip);
+  }
+
+  grid.querySelectorAll('.hm-cell').forEach(cell => {
+    const tipText = cell.dataset.heatTooltip || '';
+    if (!tipText) return;
+    cell.addEventListener('mouseenter', () => { hmTip.textContent = tipText; hmTip.style.display = 'block'; });
+    cell.addEventListener('mousemove', (e) => {
+      const cr = container.getBoundingClientRect();
+      const cx = e.clientX - cr.left;
+      const cy = e.clientY - cr.top;
+      hmTip.style.left = cx + 'px';
+      hmTip.style.top = (cy - 10) + 'px';
+      hmTip.style.transform = 'translate(-50%, -100%)';
+    });
+    cell.addEventListener('mouseleave', () => { hmTip.style.display = 'none'; });
   });
 }
 

@@ -20,6 +20,7 @@ echo ""
 COOLDOWN=10
 LAST_COMMIT=0
 
+export PATH="$PATH:/opt/homebrew/bin"
 fswatch -0 --event Created --event Updated --event Renamed \
   --include 'backup-.*\.json$' \
   --exclude '\.git/' \

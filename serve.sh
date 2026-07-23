@@ -3,6 +3,7 @@
 # 用法: bash serve.sh [端口号，默认 8000]
 
 PORT=${1:-8000}
+export PATH="$PATH:/opt/homebrew/bin"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 

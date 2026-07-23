@@ -2367,7 +2367,7 @@ function gitSyncToGitHub() {
   var monthKey = _backupMonthKey();
   var filename = 'backup-' + monthKey + '.json';
 
-  fetch('/api/git-sync', {
+  fetch(location.origin + '/api/git-sync', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filename: filename, content: raw })

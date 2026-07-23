@@ -2133,10 +2133,9 @@ function getWeekDays() {
 
 function getMonthDays() {
   const days = [];
-  const refDate = parseDate(currentDate);
-  const y = refDate.getFullYear(), m = refDate.getMonth();
-  const dim = new Date(y, m+1, 0).getDate();
-  for (let d = 1; d <= dim; d++) days.push(`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+  const [y, m] = currentDate.split('-').map(Number);
+  const dim = new Date(y, m, 0).getDate();
+  for (let d = 1; d <= dim; d++) days.push(`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
   return days;
 }
 

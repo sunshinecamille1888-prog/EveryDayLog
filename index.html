@@ -961,7 +961,7 @@ body.focus-mode .month-summary { display: none !important; }
       <div class="export-section">
         <div class="export-header">导出备份</div>
         <div class="export-row" style="margin-top:8px;">
-          <button class="btn-backup" onclick="exportFullBackup()">完整备份同步</button>
+          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">完整备份同步</button>
           <button class="btn-git-sync" id="gitSyncBtn" onclick="gitSyncToGitHub()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">

@@ -748,11 +748,13 @@ body.focus-mode .month-summary { display: none !important; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent);
 }
 .auth-card input::placeholder { color: var(--c-text-mid); opacity: 0.5; }
+.auth-btn-group {
+  display: flex; gap: 12px;
+}
 .auth-card .auth-btn {
-  width: 100%; padding: 13px; border: none; border-radius: 12px;
+  flex: 1; padding: 13px; border: none; border-radius: 12px;
   font-size: 15px; font-weight: 700; cursor: pointer;
-  transition: all 0.25s; margin-bottom: 10px;
-  letter-spacing: 1px;
+  transition: all 0.25s; letter-spacing: 1px;
 }
 .auth-btn-login {
   background: linear-gradient(135deg, var(--c-dark), var(--c-primary)); color: #fff;
@@ -791,8 +793,10 @@ body.focus-mode .month-summary { display: none !important; }
     <div id="auth-token-group">
       <input type="password" id="auth-token" placeholder="GitHub Token (ghp_/github_pat_)" autocomplete="off">
     </div>
-    <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
-    <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()">注册</button>
+    <div class="auth-btn-group">
+      <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
+      <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()">注册</button>
+    </div>
     <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
@@ -1048,7 +1052,7 @@ body.focus-mode .month-summary { display: none !important; }
         <div class="export-header">导出备份</div>
         <div class="export-row" style="margin-top:8px;">
           <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">完整备份同步</button>
-          <button class="btn-git-sync" id="gitSyncBtn" onclick="gitSyncToGitHub()">本月备份同步</button>
+          <button class="btn-git-sync" id="gitSyncBtn" onclick="exportMonthlyArchive()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
           <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_/github_pat_)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" oninput="saveGitToken()" onchange="saveGitToken()" autocomplete="off">
@@ -1133,7 +1137,7 @@ function showApp() {
   if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
 }
 function logout() {
-  try { localStorage.removeItem(GIT_TOKEN_KEY); } catch(e) {}
+  try { localStorage.removeItem(GIT_TOKEN_KEY); localStorage.removeItem(AUTH_USER_KEY); localStorage.removeItem(AUTH_TOKEN_ENC_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
@@ -2827,17 +2831,14 @@ function _checkGitSyncBtn() {
   var gitBtn = document.getElementById('gitSyncBtn');
   var fullBtn = document.getElementById('fullBackupBtn');
 
-  // 未配置 Token：禁用所有同步按钮
+  // 完整备份按钮：需 Token 才能同步到 GitHub
   if (!_canGitSync()) {
-    if (gitBtn) { gitBtn.disabled = true; gitBtn.title = '请在上方输入 GitHub Token'; }
     if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请在上方输入 GitHub Token'; }
-    return;
+  } else {
+    if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
   }
 
-  // 完整备份按钮：始终可用
-  if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
-
-  // 本月备份按钮：检查当月数据
+  // 本月备份按钮：本地导出，无需 Token；检查当月数据
   if (gitBtn) {
     var key = _backupStorageKey();
     var hasData = false;
@@ -4320,16 +4321,17 @@ function exportFullBackup() {
   });
 }
 
-/* 月度归档：导出上月 + 历史全量数据 → backup-YYYY.json */
+/* 本月备份：导出当前月度全量数据 → backup-YYYY-MM.json */
 function exportMonthlyArchive() {
   var now = new Date();
-  var prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  var y = prev.getFullYear();
+  var y = now.getFullYear();
+  var m = String(now.getMonth() + 1).padStart(2, '0');
+  var monthKey = y + '-' + m;
   var entries = loadEntries();
   var ledger = getLedgerData();
-  var backup = { version: 1, exportedAt: now.toISOString(), month: y + '-' + String(prev.getMonth() + 1).padStart(2, '0'), entries, ledger };
-  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + y + '.json', 'application/json;charset=utf-8');
-  showToast('月度归档已导出: backup-' + y + '.json');
+  var backup = { version: 1, exportedAt: now.toISOString(), month: monthKey, entries, ledger };
+  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + monthKey + '.json', 'application/json;charset=utf-8');
+  showToast('本月备份已导出: backup-' + monthKey + '.json');
 }
 
 /* ── 定时备份 ── */

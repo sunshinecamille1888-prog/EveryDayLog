@@ -2085,7 +2085,6 @@ let currentStatsTab = 'week';
     const hit = rects.find(r => mx >= r.x && mx <= r.x + r.w && my >= r.y - 20 && my <= r.y + r.h);
 
     if (hit) {
-      statsCanvas.style.cursor = 'pointer';
       tip.textContent = hit.minutes > 0 ? fmtDuration(hit.minutes * 60) : '无记录';
       // 使用父容器相对坐标，与热力图 tooltip 定位方式一致
       const parentRect = statsCanvas.parentElement.getBoundingClientRect();

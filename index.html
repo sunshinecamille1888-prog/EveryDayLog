@@ -4098,14 +4098,8 @@ function exportFullBackup() {
   btn.textContent = '同步中...';
   btn.disabled = true;
 
-  // 年度全量同样先拉远程合并，避免覆盖历史（同日期以本地为准，其余日期保留远程）
-  _gitFetchRemoteData(filename)
-  .then(function(remoteData) {
-    var merged = _deepMergeBackup(remoteData, localData);
-    merged.version = 1;
-    merged.exportedAt = new Date().toISOString();
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
-  })
+  // 年度完整备份以本地为权威，直接覆盖远程，确保删除操作能同步
+  _gitSyncFetch({ filename: filename, content: JSON.stringify(localData, null, 2) })
   .then(function() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');

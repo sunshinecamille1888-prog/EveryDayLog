@@ -1658,7 +1658,7 @@ function recordTime() {
   entries[currentDate] = entry;
   saveEntries(entries);
   updateSessionInfo(entry);
-  document.getElementById('dateTimerSummary').textContent = `已计时 ${Math.floor(entry.duration/60)}分${entry.duration%60}秒` + (entry.rounds ? `  ${entry.rounds}轮` : '');
+  document.getElementById('dateTimerSummary').textContent = `已计时 ${fmtDuration(entry.duration)}` + (entry.rounds ? `  ${entry.rounds}轮` : '');
   const d = parseDate(currentDate);
   renderCalendar(d.getFullYear(), d.getMonth());
   // 手动记录计时后刷新当前统计图表
@@ -1678,8 +1678,7 @@ function updateSessionInfo(entry) {
   const info = document.getElementById('sessionInfo');
   const parts = [];
   if (entry && entry.duration) {
-    const m = Math.floor(entry.duration / 60); const s = entry.duration % 60;
-    parts.push(`累计 ${m}分${s}秒`);
+    parts.push(`累计 ${fmtDuration(entry.duration)}`);
   }
   if (entry && entry.rounds) parts.push(`${entry.rounds}轮`);
   if (entry && entry.tags && entry.tags.length) parts.push(`标签: ${entry.tags.join(', ')}`);

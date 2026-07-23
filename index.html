@@ -1176,6 +1176,8 @@ async function handleRegister() {
   if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
   if (!/^(ghp_|github_pat_)/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'; return; }
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
+  // 清除旧的会话状态，防止残留数据干扰
+  try { sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); } catch(e) {}
   try {
     var ph = await sha256(p);
     var enc = await aesEncrypt(tok, ph);
@@ -1195,8 +1197,8 @@ async function handleRegister() {
       }
       // 404 表示文件不存在，sha 保持 null，首次创建无需 sha
     } catch(e) {
-      // 如果是我们主动抛出的权限错误，直接向上传递
-      if (e.message.indexOf('无法访问仓库') !== -1) throw e;
+      // 如果是权限错误，直接向上传递
+      if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e;
       // 网络错误等，尝试继续 PUT
     }
     // PUT 写入 auth.json
@@ -1207,15 +1209,16 @@ async function handleRegister() {
       headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
       body: JSON.stringify(putBody)
     });
-    if (!putRes.ok) {
+    if (putRes.ok) {
+      // 仅在 PUT 成功后才写入 sessionStorage 和调用 showApp()
+      sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
+      sessionStorage.setItem(SESSION_TOKENENC_KEY, enc);
+      localStorage.setItem(GIT_TOKEN_KEY, tok);
+      showApp();
+    } else {
       var putErr = await putRes.text();
       throw new Error('写入 GitHub 失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
     }
-    // 写入 sessionStorage（当前会话自动登录） + localStorage（token 明文供其他模块使用）
-    sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
-    sessionStorage.setItem(SESSION_TOKENENC_KEY, enc);
-    localStorage.setItem(GIT_TOKEN_KEY, tok);
-    showApp();
   } catch(e) { err.textContent = '注册失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '注册'; }
 }
 async function handleLogin() {
@@ -3719,6 +3722,7 @@ var zengQuotes = [
 showDailyQuote();
 function hashCode(s) {let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
 function getDailyQuote() {
+  if (!Array.isArray(zengQuotes) || !zengQuotes.length) return '';
   const key = 'daily-quote-' + currentDate;
   try {
     let cached = localStorage.getItem(key); if (cached) return cached;

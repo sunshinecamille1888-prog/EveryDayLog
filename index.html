@@ -2087,9 +2087,11 @@ let currentStatsTab = 'week';
     if (hit) {
       statsCanvas.style.cursor = 'pointer';
       tip.textContent = hit.minutes > 0 ? fmtDuration(hit.minutes * 60) : '无记录';
-      const rect = statsCanvas.getBoundingClientRect();
-      const tipX = rect.left + (hit.x + hit.w / 2) / scaleX;
-      const tipY = rect.top + (hit.y - 8) / scaleY;
+      // 使用父容器相对坐标，与热力图 tooltip 定位方式一致
+      const parentRect = statsCanvas.parentElement.getBoundingClientRect();
+      const canvasRect = statsCanvas.getBoundingClientRect();
+      const tipX = (canvasRect.left - parentRect.left) + (hit.x + hit.w / 2) / scaleX;
+      const tipY = (canvasRect.top - parentRect.top) + (hit.y - 8) / scaleY;
       tip.style.display = 'block';
       tip.style.left = tipX + 'px';
       tip.style.top = tipY + 'px';

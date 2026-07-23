@@ -1624,7 +1624,7 @@ function autoRecord() {
   entries[currentDate] = entry;
   saveEntries(entries);
   updateSessionInfo(entry);
-  document.getElementById('dateTimerSummary').textContent = `已计时 ${Math.floor(entry.duration/60)}分${entry.duration%60}秒` + (entry.rounds ? `  ${entry.rounds}轮` : '');
+  document.getElementById('dateTimerSummary').textContent = `已计时 ${fmtDuration(entry.duration)}` + (entry.rounds ? `  ${entry.rounds}轮` : '');
   const d = parseDate(currentDate);
   renderCalendar(d.getFullYear(), d.getMonth());
   // 计时完成后刷新当前统计图表

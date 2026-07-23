@@ -1082,9 +1082,9 @@ function renderCalendar(year, month) {
     // tooltip：鼠标悬浮显示计时信息
     let tooltip = '';
     if (dur) {
-      const m = Math.floor(dur / 60);
-      const h = Math.floor(m / 60);
-      tooltip = `<span class="cal-tooltip">${h > 0 ? h + 'h' + (m%60 ? m%60 + 'm' : '') : m + 'm'}</span>`;
+      const h = Math.floor(dur / 3600);
+      const m = Math.floor((dur % 3600) / 60);
+      tooltip = `<span class="cal-tooltip">${h > 0 ? h + '时' + m + '分' : m + '分'}</span>`;
     }
 
     // 心情 emoji

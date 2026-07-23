@@ -1088,10 +1088,12 @@ body.focus-mode .month-summary { display: none !important; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ====== 用户鉴权模块 (Web Crypto API) ======
-const AUTH_USER_KEY = 'edl_user';
-const AUTH_TOKEN_ENC_KEY = 'edl_token_enc';
+// ====== 用户鉴权模块 (GitHub 远程共享 + sessionStorage) ======
 const GIT_TOKEN_KEY = 'daily-doc-git-token';
+const SESSION_PWHASH_KEY = 'edl_session_pwhash';
+const SESSION_TOKENENC_KEY = 'edl_session_tokenenc';
+const GITHUB_AUTH_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/auth.json';
+const GITHUB_AUTH_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/auth.json';
 
 async function sha256(message) {
   var enc = new TextEncoder();
@@ -1122,8 +1124,8 @@ async function aesDecrypt(b64, pwhashHex) {
   var dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, data);
   return new TextDecoder().decode(dec);
 }
-function isRegistered() { try { return !!localStorage.getItem(AUTH_USER_KEY); } catch(e) { return false; } }
-function getStoredUser() { try { return JSON.parse(localStorage.getItem(AUTH_USER_KEY)); } catch(e) { return null; } }
+function isRegistered() { try { return !!sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return false; } }
+function getSessionPwhash() { try { return sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return null; } }
 function updateAuthForm() {
   var reg = isRegistered();
   document.getElementById('auth-token-group').style.display = reg ? 'none' : '';
@@ -1137,7 +1139,7 @@ function showApp() {
   if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
 }
 function logout() {
-  try { localStorage.removeItem(GIT_TOKEN_KEY); localStorage.removeItem(AUTH_USER_KEY); localStorage.removeItem(AUTH_TOKEN_ENC_KEY); } catch(e) {}
+  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
@@ -1145,6 +1147,24 @@ function logout() {
   document.getElementById('auth-error').textContent = '';
   var ti = document.getElementById('gitTokenInput'); if (ti) ti.value = '';
   updateAuthForm();
+}
+async function tryAutoLogin() {
+  try {
+    var ph = getSessionPwhash();
+    if (!ph) throw new Error('No session credentials');
+    var enc = sessionStorage.getItem(SESSION_TOKENENC_KEY);
+    if (!enc) throw new Error('Token data missing');
+    var tok = await aesDecrypt(enc, ph);
+    localStorage.setItem(GIT_TOKEN_KEY, tok);
+    showApp();
+  } catch(e) {
+    document.getElementById('auth-overlay').style.display = '';
+  }
+}
+function _strToB64(str) {
+  var bytes = new TextEncoder().encode(str);
+  var bin = ''; for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
 }
 async function handleRegister() {
   var u = document.getElementById('auth-username').value.trim();
@@ -1158,8 +1178,42 @@ async function handleRegister() {
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
   try {
     var ph = await sha256(p);
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ user: u, pwhash: ph }));
-    localStorage.setItem(AUTH_TOKEN_ENC_KEY, await aesEncrypt(tok, ph));
+    var enc = await aesEncrypt(tok, ph);
+    var authData = JSON.stringify({ user: u, pwhash: ph, token_enc: enc });
+    var contentB64 = _strToB64(authData);
+    // 先检查远程是否已有 auth.json（获取 sha 用于更新）
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, {
+        headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' }
+      });
+      if (getRes.ok) {
+        var getData = await getRes.json();
+        sha = getData.sha;
+      } else if (getRes.status !== 404) {
+        throw new Error('无法访问仓库 (' + getRes.status + ')，请检查 Token 是否有 repo 权限');
+      }
+      // 404 表示文件不存在，sha 保持 null，首次创建无需 sha
+    } catch(e) {
+      // 如果是我们主动抛出的权限错误，直接向上传递
+      if (e.message.indexOf('无法访问仓库') !== -1) throw e;
+      // 网络错误等，尝试继续 PUT
+    }
+    // PUT 写入 auth.json
+    var putBody = { message: 'register auth', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    var putRes = await fetch(GITHUB_AUTH_API, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (!putRes.ok) {
+      var putErr = await putRes.text();
+      throw new Error('写入 GitHub 失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
+    }
+    // 写入 sessionStorage（当前会话自动登录） + localStorage（token 明文供其他模块使用）
+    sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
+    sessionStorage.setItem(SESSION_TOKENENC_KEY, enc);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
   } catch(e) { err.textContent = '注册失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '注册'; }
@@ -1169,20 +1223,27 @@ async function handleLogin() {
   var p = document.getElementById('auth-password').value;
   var err = document.getElementById('auth-error');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
-  var stored = getStoredUser();
-  if (!stored) { err.textContent = '尚未注册，请先注册'; updateAuthForm(); return; }
   var ph = await sha256(p);
-  if (stored.user !== u || stored.pwhash !== ph) { err.textContent = '用户名或密码错误'; return; }
   try {
-    var enc = localStorage.getItem(AUTH_TOKEN_ENC_KEY);
-    if (!enc) throw new Error('Token 数据缺失');
-    var tok = await aesDecrypt(enc, ph);
+    // 从 GitHub Pages 拉取远程凭据（公开仓库无需 token，no-cache 避免浏览器缓存旧数据）
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) {
+      if (res.status === 404) { err.textContent = '尚未注册，请先注册'; updateAuthForm(); return; }
+      throw new Error('无法获取远程凭据 (' + res.status + ')');
+    }
+    var remote = await res.json();
+    if (remote.user !== u || remote.pwhash !== ph) { err.textContent = '用户名或密码错误'; return; }
+    var tok = await aesDecrypt(remote.token_enc, ph);
+    // 写入 sessionStorage（当前会话自动登录） + localStorage（token 明文供其他模块使用）
+    sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
+    sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
   } catch(e) { err.textContent = '登录失败: ' + (e.message || e); }
 }
 (function initAuth() {
   updateAuthForm();
+  if (isRegistered()) { tryAutoLogin(); return; }
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-password').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { if (isRegistered()) handleLogin(); else handleRegister(); }
@@ -2711,9 +2772,17 @@ function _gitSyncFetch(body) {
     'X-GitHub-Api-Version': '2022-11-28'
   };
 
+  var controller = new AbortController();
+  var timedOut = false;
+  var timer = setTimeout(function() {
+    timedOut = true;
+    controller.abort();
+  }, 30000);
+
   // 先 GET 获取 sha（文件存在则需要）
-  return fetch(url, { method: 'GET', headers: headers })
+  return fetch(url, { method: 'GET', headers: headers, signal: controller.signal })
   .then(function(resp) {
+    clearTimeout(timer);
     var payload = {
       message: 'chore: backup ' + path + ' @ ' + new Date().toISOString(),
       content: _b64Encode(content),
@@ -2734,8 +2803,10 @@ function _gitSyncFetch(body) {
     return fetch(url, {
       method: 'PUT',
       headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     }).then(function(putResp) {
+      clearTimeout(timer);
       if (!putResp.ok) {
         return putResp.text().then(function(t) {
           throw new Error('PUT ' + putResp.status + ': ' + t.slice(0, 120));
@@ -2743,6 +2814,12 @@ function _gitSyncFetch(body) {
       }
       return putResp.json();
     });
+  })
+  .catch(function(e) {
+    clearTimeout(timer);
+    var msg = timedOut ? '请求超时（30s）' : (e && e.name === 'AbortError' ? '请求已中止' : (e && e.message ? e.message : String(e || '未知错误')));
+    console.error('[GitSync] ' + msg);
+    throw new Error(msg);
   });
 }
 
@@ -2991,6 +3068,45 @@ function fetchHuangli(dateStr, silent) {
   return p;
 }
 
+/* ====== 月柱本地计算（年上起月法） ====== */
+const TIAN_GAN = '甲乙丙丁戊己庚辛壬癸';
+const DI_ZHI = '子丑寅卯辰巳午未申酉戌亥';
+
+/* 根据公历月日确定节月序数（1=寅月, 2=卯月, ..., 12=丑月）
+   基于十二节近似日期：立春2/4 惊蛰3/6 清明4/5 立夏5/6 芒种6/6
+   小暑7/7 立秋8/8 白露9/8 寒露10/8 立冬11/7 大雪12/7 小寒1/6 */
+function getJieMonthOrder(solarMonth, solarDay) {
+  const jie = [
+    null,
+    { d: 6,  o: 12 }, // 1月 小寒→丑月
+    { d: 4,  o: 1  }, // 2月 立春→寅月
+    { d: 6,  o: 2  }, // 3月 惊蛰→卯月
+    { d: 5,  o: 3  }, // 4月 清明→辰月
+    { d: 6,  o: 4  }, // 5月 立夏→巳月
+    { d: 6,  o: 5  }, // 6月 芒种→午月
+    { d: 7,  o: 6  }, // 7月 小暑→未月
+    { d: 8,  o: 7  }, // 8月 立秋→申月
+    { d: 8,  o: 8  }, // 9月 白露→酉月
+    { d: 8,  o: 9  }, // 10月 寒露→戌月
+    { d: 7,  o: 10 }, // 11月 立冬→亥月
+    { d: 7,  o: 11 }  // 12月 大雪→子月
+  ];
+  var m = solarMonth, d = solarDay;
+  if (d >= jie[m].d) return jie[m].o;
+  var pm = m === 1 ? 12 : m - 1;
+  return jie[pm].o;
+}
+
+/* 年上起月：年干 + 节月序数 → 月柱干支 */
+function computeMonthGanzhi(yearGanzhi, jieMonthOrder) {
+  var yearStemIdx = TIAN_GAN.indexOf(yearGanzhi[0]);
+  // 甲己→丙 乙庚→戊 丙辛→庚 丁壬→壬 戊癸→甲
+  var month1Stem = [2, 4, 6, 8, 0][yearStemIdx % 5];
+  var stemIdx = (month1Stem + jieMonthOrder - 1) % 10;
+  var branchIdx = (2 + jieMonthOrder - 1) % 12;
+  return TIAN_GAN[stemIdx] + DI_ZHI[branchIdx];
+}
+
 /* 静默预加载前后 N 天的黄历数据 */
 function prefetchAdjacent(dateStr, n) {
   n = n || 1;
@@ -3036,6 +3152,8 @@ function renderHuangli(dateStr) {
 
     /* 干支 */
     document.getElementById('hlYearGz').textContent = l.year_ganzhi;
+    var jieMo = getJieMonthOrder(s.month, s.day);
+    l.month_ganzhi = computeMonthGanzhi(l.year_ganzhi, jieMo);
     document.getElementById('hlMonthGz').textContent = l.month_ganzhi;
     document.getElementById('hlDayGz').textContent = l.day_ganzhi;
     document.getElementById('hlWx').textContent = a.wuxing || '--';

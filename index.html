@@ -2344,6 +2344,73 @@ function localSync() {
     });
 }
 
+// ====== GitHub 同步 ======
+function gitSyncToGitHub() {
+  var btn = document.getElementById('gitSyncBtn');
+  if (!btn) return;
+
+  var key = _backupStorageKey();
+  var raw;
+  try { raw = localStorage.getItem(key); } catch(e) { raw = null; }
+  if (!raw) { showToast('暂无当月备份数据'); return; }
+
+  // 进入同步中状态
+  btn.classList.add('syncing');
+  btn.classList.remove('synced', 'sync-error');
+  btn.textContent = '同步中...';
+  btn.disabled = true;
+
+  var monthKey = _backupMonthKey();
+  var filename = 'backup-' + monthKey + '.json';
+
+  fetch('/api/git-sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: filename, content: raw })
+  })
+  .then(function(resp) {
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.json();
+  })
+  .then(function() {
+    btn.classList.remove('syncing');
+    btn.classList.add('synced');
+    btn.textContent = '已同步 \u2713';
+    setTimeout(function() {
+      btn.classList.remove('synced');
+      btn.textContent = '同步到 GitHub';
+      btn.disabled = false;
+      _checkGitSyncBtn();
+    }, 2000);
+  })
+  .catch(function() {
+    btn.classList.remove('syncing');
+    btn.classList.add('sync-error');
+    btn.textContent = '同步失败';
+    setTimeout(function() {
+      btn.classList.remove('sync-error');
+      btn.textContent = '同步到 GitHub';
+      btn.disabled = false;
+      _checkGitSyncBtn();
+    }, 2000);
+  });
+}
+
+function _checkGitSyncBtn() {
+  var btn = document.getElementById('gitSyncBtn');
+  if (!btn) return;
+  var key = _backupStorageKey();
+  var hasData = false;
+  try { hasData = !!localStorage.getItem(key); } catch(e) {}
+  if (!hasData) {
+    btn.disabled = true;
+    btn.title = '暂无当月备份数据';
+  } else {
+    btn.disabled = false;
+    btn.title = '';
+  }
+}
+
 // ====== 拖拽导入备份 JSON ======
 (function() {
   var ol = document.createElement('div');

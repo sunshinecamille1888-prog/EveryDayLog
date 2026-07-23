@@ -789,7 +789,7 @@ body.focus-mode .month-summary { display: none !important; }
     <input type="text" id="auth-username" placeholder="用户名" autocomplete="username">
     <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password">
     <div id="auth-token-group">
-      <input type="password" id="auth-token" placeholder="GitHub Token (ghp_...)" autocomplete="off">
+      <input type="password" id="auth-token" placeholder="GitHub Token (ghp_/github_pat_)" autocomplete="off">
     </div>
     <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
     <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()">注册</button>
@@ -1051,7 +1051,7 @@ body.focus-mode .month-summary { display: none !important; }
           <button class="btn-git-sync" id="gitSyncBtn" onclick="gitSyncToGitHub()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
-          <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_...)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" oninput="saveGitToken()" onchange="saveGitToken()" autocomplete="off">
+          <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_/github_pat_)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" oninput="saveGitToken()" onchange="saveGitToken()" autocomplete="off">
           <span class="schedule-label" style="margin-left:4px;font-size:10px;color:#888;cursor:pointer;" onclick="showGitTokenHelp()">?</span>
         </div>
         <div class="export-row" style="margin-top:10px;">
@@ -1150,7 +1150,7 @@ async function handleRegister() {
   var btn = document.getElementById('auth-register-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
   if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
-  if (!/^ghp_/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 开头'; return; }
+  if (!/^(ghp_|github_pat_)/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'; return; }
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
   try {
     var ph = await sha256(p);

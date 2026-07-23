@@ -4100,10 +4100,11 @@ function exportFullBackup() {
       _checkGitSyncBtn();
     }, 2000);
   })
-  .catch(function() {
+  .catch(function(e) {
     btn.classList.remove('syncing');
     btn.classList.add('sync-error');
     btn.textContent = '同步失败';
+    showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
     setTimeout(function() {
       btn.classList.remove('sync-error');
       btn.textContent = '完整备份同步';

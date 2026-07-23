@@ -2441,6 +2441,66 @@ function _b64Encode(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
 
+// Base64 解码（兼容中文，_b64Encode 的逆过程；容错 GitHub 返回内容中的换行）
+function _b64Decode(b64) {
+  return decodeURIComponent(escape(atob((b64 || '').replace(/\s/g, ''))));
+}
+
+// GET 远程备份文件并解码为对象；文件不存在(404)返回 null，解析失败返回 null
+function _gitFetchRemoteData(filename) {
+  var token = _getGitToken();
+  if (!token) return Promise.reject(new Error('未配置 GitHub Token'));
+  var url = GITHUB_REPO_API + '/' + filename;
+  var headers = {
+    'Authorization': 'Bearer ' + token,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+  return fetch(url, { method: 'GET', headers: headers })
+  .then(function(resp) {
+    if (resp.status === 404) return null;
+    if (!resp.ok) {
+      return resp.text().then(function(t) {
+        throw new Error('GET ' + resp.status + ': ' + t.slice(0, 120));
+      });
+    }
+    return resp.json().then(function(data) {
+      try { return JSON.parse(_b64Decode(data.content)); }
+      catch(e) { return null; }
+    });
+  });
+}
+
+// 深度合并两份备份数据（远程 + 本地），按日期去重：
+//  - entries：以日期为 key 的对象，同日期本地覆盖远程，不同日期全部保留
+//  - ledger：数组，本地涉及的日期以本地为准（整日替换），其余日期保留远程
+function _deepMergeBackup(remote, local) {
+  remote = remote || {};
+  local = local || {};
+  var merged = { entries: {}, ledger: [] };
+
+  // ── entries 合并 ──
+  var rEntries = (remote.entries && typeof remote.entries === 'object') ? remote.entries : {};
+  var lEntries = (local.entries && typeof local.entries === 'object') ? local.entries : {};
+  Object.keys(rEntries).forEach(function(k) { merged.entries[k] = rEntries[k]; });
+  Object.keys(lEntries).forEach(function(k) { merged.entries[k] = lEntries[k]; });
+
+  // ── ledger 合并 ──
+  var rLedger = Array.isArray(remote.ledger) ? remote.ledger : [];
+  var lLedger = Array.isArray(local.ledger) ? local.ledger : [];
+  var localDates = {};
+  lLedger.forEach(function(t) { if (t && t.date) localDates[t.date] = true; });
+  // 远程账目：仅保留「本地未涉及日期」的记录，避免同日重复
+  rLedger.forEach(function(t) {
+    if (!t || !t.date || !localDates[t.date]) merged.ledger.push(t);
+  });
+  // 本地账目：整体加入（本地涉及日期以本地为准）
+  lLedger.forEach(function(t) { merged.ledger.push(t); });
+
+  merged._updatedAt = new Date().toISOString();
+  return merged;
+}
+
 // 直连 GitHub Contents API 推送文件
 function _gitSyncFetch(body) {
   var token = _getGitToken();
@@ -2500,6 +2560,10 @@ function gitSyncToGitHub() {
   try { raw = localStorage.getItem(key); } catch(e) { raw = null; }
   if (!raw) { showToast('暂无当月备份数据'); return; }
 
+  var localData;
+  try { localData = JSON.parse(raw); } catch(e) { localData = null; }
+  if (!localData) { showToast('本地备份数据解析失败'); return; }
+
   // 进入同步中状态
   btn.classList.add('syncing');
   btn.classList.remove('synced', 'sync-error');
@@ -2509,7 +2573,15 @@ function gitSyncToGitHub() {
   var monthKey = _backupMonthKey();
   var filename = 'backup-' + monthKey + '.json';
 
-  _gitSyncFetch({ filename: filename, content: raw })
+  // 先拉取远程已有备份，与本地按日期深度合并后再推送，避免覆盖历史数据。
+  // 远程不存在(404)时 remoteData 为 null，_deepMergeBackup 会退化为仅用本地数据。
+  _gitFetchRemoteData(filename)
+  .then(function(remoteData) {
+    var merged = _deepMergeBackup(remoteData, localData);
+    // 合并结果回写本地，使本地也成为全量，避免下次再被局部数据覆盖
+    try { localStorage.setItem(key, JSON.stringify(merged)); } catch(e) {}
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
+  })
   .then(function() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');
@@ -3995,16 +4067,22 @@ function exportFullBackup() {
 
   var entries = loadEntries();
   var ledger = getLedgerData();
-  var backup = { version: 1, exportedAt: new Date().toISOString(), entries, ledger };
+  var localData = { version: 1, exportedAt: new Date().toISOString(), entries: entries, ledger: ledger };
   var filename = 'backup-' + new Date().getFullYear() + '.json';
-  var content = JSON.stringify(backup, null, 2);
 
   btn.classList.add('syncing');
   btn.classList.remove('synced', 'sync-error');
   btn.textContent = '同步中...';
   btn.disabled = true;
 
-  _gitSyncFetch({ filename: filename, content: content })
+  // 年度全量同样先拉远程合并，避免覆盖历史（同日期以本地为准，其余日期保留远程）
+  _gitFetchRemoteData(filename)
+  .then(function(remoteData) {
+    var merged = _deepMergeBackup(remoteData, localData);
+    merged.version = 1;
+    merged.exportedAt = new Date().toISOString();
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
+  })
   .then(function() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');

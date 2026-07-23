@@ -1,5 +1,16 @@
 {
+  "version": 1,
+  "exportedAt": "2026-07-23T10:34:48.477Z",
   "entries": {
+    "2026-07-23": {
+      "content": "## 早餐\n\n- 花卷\n\n## 午餐\n\n- 两菜一汤一碗米饭\n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
+      "duration": 0,
+      "templateContents": {
+        "三餐四季": "## 早餐\n\n- 花卷\n\n## 午餐\n\n- 两菜一汤一碗米饭\n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
+        "今日三件事": "## 今日目标\n\n1. \n2. \n3. \n\n## 完成事项\n\n- \n\n## 明日计划\n\n- "
+      },
+      "mood": 4
+    },
     "2026-07-22": {
       "content": "学习笔记",
       "duration": 11745,
@@ -33,15 +44,6 @@
       ],
       "rounds": 0
     },
-    "2026-07-23": {
-      "content": "## 早餐\n\n- 花卷\n\n## 午餐\n\n- 两菜一汤一碗米饭\n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
-      "duration": 0,
-      "templateContents": {
-        "三餐四季": "## 早餐\n\n- 花卷\n\n## 午餐\n\n- 两菜一汤一碗米饭\n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
-        "今日三件事": "## 今日目标\n\n1. \n2. \n3. \n\n## 完成事项\n\n- \n\n## 明日计划\n\n- "
-      },
-      "mood": 4
-    },
     "2026-07-21": {
       "content": "qianyirimmmmm",
       "duration": 0,
@@ -59,15 +61,6 @@
   },
   "ledger": [
     {
-      "id": 1784800201036.836,
-      "date": "2026-06-01",
-      "type": "expense",
-      "amount": 8888888,
-      "category": "food",
-      "note": "",
-      "time": "17:50"
-    },
-    {
       "id": 1784789781614.3699,
       "date": "2026-07-23",
       "type": "expense",
@@ -75,42 +68,6 @@
       "category": "food",
       "note": "午餐",
       "time": "14:56"
-    },
-    {
-      "id": 1784797047715.2004,
-      "date": "2026-07-22",
-      "type": "expense",
-      "amount": 10000,
-      "category": "food",
-      "note": "",
-      "time": "16:57"
-    },
-    {
-      "id": 1784695275092.8853,
-      "date": "2026-07-22",
-      "type": "expense",
-      "amount": 7,
-      "category": "food",
-      "note": "午饭",
-      "time": "12:41"
-    },
-    {
-      "id": 1784715583008.5974,
-      "date": "2026-07-22",
-      "type": "expense",
-      "amount": 13,
-      "category": "food",
-      "note": "晚餐",
-      "time": "18:19"
-    },
-    {
-      "id": 1784715641166.7175,
-      "date": "2026-07-22",
-      "type": "expense",
-      "amount": 5.98,
-      "category": "food",
-      "note": "饮料",
-      "time": "18:20"
     },
     {
       "id": 1784799580858.8228,
@@ -121,8 +78,5 @@
       "note": "",
       "time": "17:39"
     }
-  ],
-  "_updatedAt": "2026-07-23T09:51:13.938Z",
-  "version": 1,
-  "exportedAt": "2026-07-23T09:51:13.938Z"
+  ]
 }

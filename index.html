@@ -963,6 +963,7 @@ body.focus-mode .month-summary { display: none !important; }
           <button class="btn-backup" onclick="exportFullBackup()">完整备份导出</button>
           <button class="btn-backup" onclick="exportBackup()">导出本月备份</button>
           <button class="btn-import" onclick="document.getElementById('importFileInput').click()">导入备份</button>
+          <button class="btn-git-sync" id="gitSyncBtn" onclick="gitSyncToGitHub()">同步到 GitHub</button>
           <input type="file" id="importFileInput" accept=".json" onchange="importBackupFile(this)" style="display:none">
         </div>
         <div class="export-row" style="margin-top:10px;">

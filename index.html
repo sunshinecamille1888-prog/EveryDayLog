@@ -2463,25 +2463,31 @@ function gitSyncToGitHub() {
 }
 
 function _checkGitSyncBtn() {
-  var btn = document.getElementById('gitSyncBtn');
-  if (!btn) return;
+  var gitBtn = document.getElementById('gitSyncBtn');
+  var fullBtn = document.getElementById('fullBackupBtn');
 
-  // 非本地环境：禁用
+  // 非本地环境：禁用所有同步按钮
   if (!_isLocalhost()) {
-    btn.disabled = true;
-    btn.title = '请在本地服务器使用同步功能（bash serve.sh）';
+    if (gitBtn) { gitBtn.disabled = true; gitBtn.title = '请在本地服务器使用同步功能（bash serve.sh）'; }
+    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请在本地服务器使用同步功能（bash serve.sh）'; }
     return;
   }
 
-  var key = _backupStorageKey();
-  var hasData = false;
-  try { hasData = !!localStorage.getItem(key); } catch(e) {}
-  if (!hasData) {
-    btn.disabled = true;
-    btn.title = '暂无当月备份数据';
-  } else {
-    btn.disabled = false;
-    btn.title = '';
+  // 完整备份按钮：本地环境始终可用
+  if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
+
+  // 本月备份按钮：检查当月数据
+  if (gitBtn) {
+    var key = _backupStorageKey();
+    var hasData = false;
+    try { hasData = !!localStorage.getItem(key); } catch(e) {}
+    if (!hasData) {
+      gitBtn.disabled = true;
+      gitBtn.title = '暂无当月备份数据';
+    } else {
+      gitBtn.disabled = false;
+      gitBtn.title = '';
+    }
   }
 }
 
@@ -3936,6 +3942,7 @@ function exportFullBackup() {
       btn.classList.remove('synced');
       btn.textContent = '完整备份同步';
       btn.disabled = false;
+      _checkGitSyncBtn();
     }, 2000);
   })
   .catch(function() {
@@ -3946,6 +3953,7 @@ function exportFullBackup() {
       btn.classList.remove('sync-error');
       btn.textContent = '完整备份同步';
       btn.disabled = false;
+      _checkGitSyncBtn();
     }, 2000);
   });
 }

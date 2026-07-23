@@ -3611,6 +3611,8 @@ function addLedgerEntry() {
   document.getElementById('lAmount').value = '';
   document.getElementById('lNote').value = '';
   renderLedger();
+  drawLedgerTrend(); updateTrendCards();
+  if (document.getElementById('ledgerStats').classList.contains('show')) { renderCategoryStats(); }
   const d = parseDate(currentDate);
   renderCalendar(d.getFullYear(), d.getMonth());
   showToast(type === 'income' ? '已记收入' : '已记支出');
@@ -3619,7 +3621,7 @@ function addLedgerEntry() {
 function deleteLedgerEntry(id) {
   const data = getLedgerData();
   const idx = data.findIndex(t => t.id === id);
-  if (idx >= 0) { data.splice(idx, 1); saveLedgerData(data); renderLedger(); const d = parseDate(currentDate); renderCalendar(d.getFullYear(), d.getMonth()); }
+  if (idx >= 0) { data.splice(idx, 1); saveLedgerData(data); renderLedger(); drawLedgerTrend(); updateTrendCards(); if (document.getElementById('ledgerStats').classList.contains('show')) { renderCategoryStats(); } const d = parseDate(currentDate); renderCalendar(d.getFullYear(), d.getMonth()); }
 }
 
 function switchLedgerType() {
@@ -3699,6 +3701,8 @@ function renderLedger() {
 
   updateMonthlyStats();
   drawLedgerMiniChart();
+  if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
+  if (document.getElementById('ledgerStats').classList.contains('show')) { renderCategoryStats(); }
 
   if (txns.length === 0) {
     el.innerHTML = '<div class="ledger-empty">暂无记录</div>';
@@ -3775,6 +3779,8 @@ function saveLedgerEdit(id) {
   t.note = (noteEl ? noteEl.value.trim() : '');
   saveLedgerData(data);
   renderLedger();
+  drawLedgerTrend(); updateTrendCards();
+  if (document.getElementById('ledgerStats').classList.contains('show')) { renderCategoryStats(); }
   const d = parseDate(currentDate);
   renderCalendar(d.getFullYear(), d.getMonth());
   showToast('已更新');

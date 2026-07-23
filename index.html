@@ -2345,6 +2345,10 @@ function localSync() {
 }
 
 // ====== GitHub 同步 ======
+function _isLocalhost() {
+  return location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+}
+
 function gitSyncToGitHub() {
   var btn = document.getElementById('gitSyncBtn');
   if (!btn) return;

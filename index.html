@@ -710,11 +710,80 @@ body.focus-mode .month-summary { display: none !important; }
 .sync-dot::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
 .sync-dot:hover::after { opacity: 1; }
 
+/* ── 用户鉴权 ── */
+#auth-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #1a1610 0%, #2a241c 100%);
+}
+.auth-card {
+  background: #2a241c; border-radius: 20px; padding: 40px 36px;
+  width: 380px; max-width: 92vw;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+  text-align: center; border: 1px solid #3a3028;
+}
+.auth-card h2 {
+  font-size: 22px; font-weight: 800; color: #e0c28c;
+  margin-bottom: 8px; letter-spacing: 1px;
+}
+.auth-card .auth-subtitle {
+  font-size: 12px; color: #6b5a3a; margin-bottom: 24px;
+}
+.auth-card input {
+  width: 100%; padding: 12px 14px; margin-bottom: 12px;
+  border: 1.5px solid #3a3028; border-radius: 12px;
+  font-size: 14px; background: #1e1a14; color: #e8dcc8;
+  outline: none; transition: border 0.2s;
+  box-sizing: border-box;
+}
+.auth-card input:focus { border-color: #b8942f; }
+.auth-card input::placeholder { color: #5a5040; }
+.auth-card .auth-btn {
+  width: 100%; padding: 12px; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; margin-bottom: 8px;
+}
+.auth-btn-login {
+  background: linear-gradient(135deg, #8b6914, #b8942f); color: #fff;
+  box-shadow: 0 2px 12px rgba(184,148,47,0.25);
+}
+.auth-btn-login:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,148,47,0.4); }
+.auth-btn-register {
+  background: linear-gradient(135deg, #6b5a3a, #8b6914); color: #e8dcc8;
+}
+.auth-btn-register:hover { transform: translateY(-1px); opacity: 0.9; }
+.auth-error {
+  color: #e53935; font-size: 12px; margin-top: 8px; min-height: 18px;
+}
+.btn-logout {
+  background: none; border: 1px solid #5a5040; color: #8b8b7a;
+  padding: 3px 12px; border-radius: 12px; font-size: 11px; cursor: pointer;
+  font-weight: 600; transition: all 0.2s; margin-left: 6px;
+}
+.btn-logout:hover { background: #3a3028; color: #e8dcc8; border-color: #b8942f; }
+
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 <body>
 <script>(function(){try{var t=localStorage.getItem('daily-doc-theme');if(t)document.body.className=t}catch(e){}})()</script>
+
+<!-- 用户鉴权覆盖层 -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <h2>每日文档</h2>
+    <div class="auth-subtitle">EveryDayLog</div>
+    <input type="text" id="auth-username" placeholder="用户名" autocomplete="username">
+    <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password">
+    <div id="auth-token-group">
+      <input type="password" id="auth-token" placeholder="GitHub Token (ghp_...)" autocomplete="off">
+    </div>
+    <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
+    <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()">注册</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
 <div class="app">
   <!-- 左侧：紧凑日历 -->
   <div class="sidebar">
@@ -803,6 +872,7 @@ body.focus-mode .month-summary { display: none !important; }
       </div>
       <div class="sync-dot idle" id="syncDot" data-tip="点击导入备份" onclick="localSync()" title="导入备份"></div>
       <span class="device-tag" id="deviceTag" title="当前设备类型"></span>
+      <button class="btn-logout" id="btnLogout" onclick="logout()" title="登出">登出</button>
     </div>
 
     <div class="timer-panel">
@@ -1001,6 +1071,105 @@ body.focus-mode .month-summary { display: none !important; }
 <div class="toast" id="toast"></div>
 
 <script>
+// ====== 用户鉴权模块 (Web Crypto API) ======
+const AUTH_USER_KEY = 'edl_user';
+const AUTH_TOKEN_ENC_KEY = 'edl_token_enc';
+const GIT_TOKEN_KEY = 'daily-doc-git-token';
+
+async function sha256(message) {
+  var enc = new TextEncoder();
+  var buf = await crypto.subtle.digest('SHA-256', enc.encode(message));
+  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+async function _deriveAesKey(pwhashHex) {
+  var kb = new Uint8Array(32);
+  for (var i = 0; i < 32; i++) kb[i] = parseInt(pwhashHex.substr(i * 2, 2), 16);
+  return crypto.subtle.importKey('raw', kb, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+async function aesEncrypt(plain, pwhashHex) {
+  var key = await _deriveAesKey(pwhashHex);
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  var enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(plain));
+  var combined = new Uint8Array(iv.length + new Uint8Array(enc).length);
+  combined.set(iv); combined.set(new Uint8Array(enc), iv.length);
+  return btoa(String.fromCharCode.apply(null, combined));
+}
+async function aesDecrypt(b64, pwhashHex) {
+  var key = await _deriveAesKey(pwhashHex);
+  var combined = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
+  var iv = combined.slice(0, 12), data = combined.slice(12);
+  var dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, data);
+  return new TextDecoder().decode(dec);
+}
+function isRegistered() { try { return !!localStorage.getItem(AUTH_USER_KEY); } catch(e) { return false; } }
+function getStoredUser() { try { return JSON.parse(localStorage.getItem(AUTH_USER_KEY)); } catch(e) { return null; } }
+function updateAuthForm() {
+  var reg = isRegistered();
+  document.getElementById('auth-token-group').style.display = reg ? 'none' : '';
+  document.getElementById('auth-login-btn').style.display = reg ? '' : 'none';
+  document.getElementById('auth-register-btn').style.display = reg ? 'none' : '';
+}
+function showApp() {
+  document.getElementById('auth-overlay').style.display = 'none';
+  var ti = document.getElementById('gitTokenInput');
+  if (ti) { var t = ''; try { t = localStorage.getItem(GIT_TOKEN_KEY) || ''; } catch(e) {} if (t) ti.value = t; }
+  if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
+}
+function logout() {
+  try { localStorage.removeItem(GIT_TOKEN_KEY); } catch(e) {}
+  document.getElementById('auth-overlay').style.display = '';
+  document.getElementById('auth-username').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-token').value = '';
+  document.getElementById('auth-error').textContent = '';
+  var ti = document.getElementById('gitTokenInput'); if (ti) ti.value = '';
+  updateAuthForm();
+}
+async function handleRegister() {
+  var u = document.getElementById('auth-username').value.trim();
+  var p = document.getElementById('auth-password').value;
+  var tok = document.getElementById('auth-token').value.trim();
+  var err = document.getElementById('auth-error');
+  if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
+  if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
+  if (!/^ghp_/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 开头'; return; }
+  try {
+    var ph = await sha256(p);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ user: u, pwhash: ph }));
+    localStorage.setItem(AUTH_TOKEN_ENC_KEY, await aesEncrypt(tok, ph));
+    localStorage.setItem(GIT_TOKEN_KEY, tok);
+    showApp();
+  } catch(e) { err.textContent = '注册失败: ' + (e.message || e); }
+}
+async function handleLogin() {
+  var u = document.getElementById('auth-username').value.trim();
+  var p = document.getElementById('auth-password').value;
+  var err = document.getElementById('auth-error');
+  if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
+  var stored = getStoredUser();
+  if (!stored) { err.textContent = '尚未注册，请先注册'; updateAuthForm(); return; }
+  var ph = await sha256(p);
+  if (stored.user !== u || stored.pwhash !== ph) { err.textContent = '用户名或密码错误'; return; }
+  try {
+    var enc = localStorage.getItem(AUTH_TOKEN_ENC_KEY);
+    if (!enc) throw new Error('Token 数据缺失');
+    var tok = await aesDecrypt(enc, ph);
+    localStorage.setItem(GIT_TOKEN_KEY, tok);
+    showApp();
+  } catch(e) { err.textContent = '登录失败: ' + (e.message || e); }
+}
+(function initAuth() {
+  updateAuthForm();
+  document.getElementById('auth-overlay').style.display = '';
+  document.getElementById('auth-password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { if (isRegistered()) handleLogin(); else handleRegister(); }
+  });
+  document.getElementById('auth-token').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleRegister();
+  });
+})();
+// ====== 用户鉴权模块 end ======
+
 const STORAGE_KEY = 'daily_doc_entries';
 let currentDate = getToday();
 let calYear, calMonth;

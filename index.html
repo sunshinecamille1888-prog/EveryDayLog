@@ -2210,7 +2210,7 @@ function drawBarChart(data, labels, title) {
   window._barRects = [];
   data.forEach((v, i) => {
     const x = pad.left + gap * i + (gap - barW) / 2;
-    const barH = (v / maxVal) * chartH;
+    const barH = (v / chartMax) * chartH;
     const y = pad.top + chartH - barH;
 
     // 记录柱子位置信息，供 mousemove 悬浮提示使用

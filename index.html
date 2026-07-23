@@ -1105,12 +1105,16 @@ async function aesEncrypt(plain, pwhashHex) {
   var enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(plain));
   var combined = new Uint8Array(iv.length + new Uint8Array(enc).length);
   combined.set(iv); combined.set(new Uint8Array(enc), iv.length);
-  return btoa(String.fromCharCode.apply(null, combined));
+  var binary = '';
+  for (var i = 0; i < combined.length; i++) binary += String.fromCharCode(combined[i]);
+  return btoa(binary);
 }
 async function aesDecrypt(b64, pwhashHex) {
   var key = await _deriveAesKey(pwhashHex);
-  var combined = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
-  var iv = combined.slice(0, 12), data = combined.slice(12);
+  var binary = atob(b64);
+  var bytes = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  var iv = bytes.slice(0, 12), data = bytes.slice(12);
   var dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, data);
   return new TextDecoder().decode(dec);
 }
@@ -1143,16 +1147,18 @@ async function handleRegister() {
   var p = document.getElementById('auth-password').value;
   var tok = document.getElementById('auth-token').value.trim();
   var err = document.getElementById('auth-error');
+  var btn = document.getElementById('auth-register-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
   if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
   if (!/^ghp_/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 开头'; return; }
+  btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
   try {
     var ph = await sha256(p);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ user: u, pwhash: ph }));
     localStorage.setItem(AUTH_TOKEN_ENC_KEY, await aesEncrypt(tok, ph));
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
-  } catch(e) { err.textContent = '注册失败: ' + (e.message || e); }
+  } catch(e) { err.textContent = '注册失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '注册'; }
 }
 async function handleLogin() {
   var u = document.getElementById('auth-username').value.trim();

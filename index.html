@@ -2210,15 +2210,6 @@ function clearEditor() {
   if (typeof calYear !== 'undefined') renderCalendar(calYear, calMonth);
 }
 
-function downloadFile(content, filename, mime) {
-  const blob = new Blob([content], { type: mime });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
 // ====== Markdown 简易渲染 ======
 function renderMarkdown(text) {
   if (!text) return '';
@@ -2834,79 +2825,6 @@ function _gitSyncFetch(body) {
     var msg = timedOut ? '请求超时（30s）' : (e && e.name === 'AbortError' ? '请求已中止' : (e && e.message ? e.message : String(e || '未知错误')));
     console.error('[GitSync] ' + msg);
     throw new Error(msg);
-  });
-}
-
-function gitSyncToGitHub() {
-  var btn = document.getElementById('gitSyncBtn');
-  if (!btn) return;
-  if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
-
-  // 先同步最新 entries → backup，确保累积时间等数据是最新的
-  try {
-    var freshEntries = loadEntries();
-    var monthPrefix = _backupMonthKey();
-    var backup = _loadBackup();
-    Object.keys(freshEntries).forEach(function(d) {
-      if (d && d.indexOf(monthPrefix) === 0 && freshEntries[d]) {
-        backup.entries[d] = freshEntries[d];
-      }
-    });
-    // ledger 也刷新当天数据
-    var allLedger = getLedgerData();
-    var todayLedger = allLedger.filter(function(t) { return t.date === currentDate; });
-    backup.ledger = backup.ledger.filter(function(t) { return t.date !== currentDate; });
-    backup.ledger = backup.ledger.concat(todayLedger);
-    backup._updatedAt = new Date().toISOString();
-    _saveBackup(backup);
-  } catch(e) {}
-
-  var key = _backupStorageKey();
-  var localData = _loadBackup();
-  if (!localData || !localData.entries || Object.keys(localData.entries).length === 0) {
-    showToast('暂无当月备份数据'); return;
-  }
-
-  // 进入同步中状态
-  btn.classList.add('syncing');
-  btn.classList.remove('synced', 'sync-error');
-  btn.textContent = '同步中...';
-  btn.disabled = true;
-
-  var monthKey = _backupMonthKey();
-  var filename = 'backup-' + monthKey + '.json';
-
-  // 先拉取远程已有备份，与本地按日期深度合并后再推送，避免覆盖历史数据。
-  // 远程不存在(404)时 remoteData 为 null，_deepMergeBackup 会退化为仅用本地数据。
-  _gitFetchRemoteData(filename)
-  .then(function(remoteData) {
-    var merged = _deepMergeBackup(remoteData, localData);
-    // 合并结果回写本地，使本地也成为全量，避免下次再被局部数据覆盖
-    try { localStorage.setItem(key, JSON.stringify(merged)); } catch(e) {}
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
-  })
-  .then(function() {
-    btn.classList.remove('syncing');
-    btn.classList.add('synced');
-    btn.textContent = '已同步 \u2713';
-    setTimeout(function() {
-      btn.classList.remove('synced');
-      btn.textContent = '本月备份同步';
-      btn.disabled = false;
-      _checkGitSyncBtn();
-    }, 2000);
-  })
-  .catch(function(e) {
-    btn.classList.remove('syncing');
-    btn.classList.add('sync-error');
-    btn.textContent = '同步失败';
-    showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
-    setTimeout(function() {
-      btn.classList.remove('sync-error');
-      btn.textContent = '本月备份同步';
-      btn.disabled = false;
-      _checkGitSyncBtn();
-    }, 2000);
   });
 }
 
@@ -4449,17 +4367,75 @@ function exportFullBackup() {
   });
 }
 
-/* 本月备份：导出当前月度全量数据 → backup-YYYY-MM.json */
+/* 本月备份：同步当月数据到 GitHub → backup-YYYY-MM.json */
 function exportMonthlyArchive() {
-  var now = new Date();
-  var y = now.getFullYear();
-  var m = String(now.getMonth() + 1).padStart(2, '0');
-  var monthKey = y + '-' + m;
-  var entries = loadEntries();
-  var ledger = getLedgerData();
-  var backup = { version: 1, exportedAt: now.toISOString(), month: monthKey, entries, ledger };
-  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + monthKey + '.json', 'application/json;charset=utf-8');
-  showToast('本月备份已导出: backup-' + monthKey + '.json');
+  if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
+
+  var btn = document.getElementById('gitSyncBtn');
+  if (!btn) return;
+
+  // 先同步最新 entries → backup，确保累积时间等数据是最新的
+  try {
+    var freshEntries = loadEntries();
+    var monthPrefix = _backupMonthKey();
+    var backup = _loadBackup();
+    Object.keys(freshEntries).forEach(function(d) {
+      if (d && d.indexOf(monthPrefix) === 0 && freshEntries[d]) {
+        backup.entries[d] = freshEntries[d];
+      }
+    });
+    var allLedger = getLedgerData();
+    var todayLedger = allLedger.filter(function(t) { return t.date === currentDate; });
+    backup.ledger = backup.ledger.filter(function(t) { return t.date !== currentDate; });
+    backup.ledger = backup.ledger.concat(todayLedger);
+    backup._updatedAt = new Date().toISOString();
+    _saveBackup(backup);
+  } catch(e) {}
+
+  var key = _backupStorageKey();
+  var localData = _loadBackup();
+  if (!localData || !localData.entries || Object.keys(localData.entries).length === 0) {
+    showToast('暂无当月备份数据'); return;
+  }
+
+  btn.classList.add('syncing');
+  btn.classList.remove('synced', 'sync-error');
+  btn.textContent = '同步中...';
+  btn.disabled = true;
+
+  var monthKey = _backupMonthKey();
+  var filename = 'backup-' + monthKey + '.json';
+
+  _gitFetchRemoteData(filename)
+  .then(function(remoteData) {
+    var merged = _deepMergeBackup(remoteData, localData);
+    try { localStorage.setItem(key, JSON.stringify(merged)); } catch(e) {}
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
+  })
+  .then(function() {
+    btn.classList.remove('syncing');
+    btn.classList.add('synced');
+    btn.textContent = '已同步 \u2713';
+    showToast('本月备份已同步: ' + filename);
+    setTimeout(function() {
+      btn.classList.remove('synced');
+      btn.textContent = '本月备份同步';
+      btn.disabled = false;
+      _checkGitSyncBtn();
+    }, 2000);
+  })
+  .catch(function(e) {
+    btn.classList.remove('syncing');
+    btn.classList.add('sync-error');
+    btn.textContent = '同步失败';
+    showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
+    setTimeout(function() {
+      btn.classList.remove('sync-error');
+      btn.textContent = '本月备份同步';
+      btn.disabled = false;
+      _checkGitSyncBtn();
+    }, 2000);
+  });
 }
 
 /* ── 定时备份 ── */

@@ -714,40 +714,40 @@ body.focus-mode .month-summary { display: none !important; }
 #auth-overlay {
   position: fixed; inset: 0; z-index: 99999;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse at 50% 35%, #2a241c 0%, #1a1610 70%);
+  background: var(--c-bg);
 }
 .auth-card {
-  background: #2a241c; border-radius: 20px; padding: 48px 36px 40px;
+  background: var(--c-bg-light); border-radius: 20px; padding: 48px 36px 40px;
   width: 380px; max-width: 92vw;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
-  text-align: center; border: 1px solid #3a3028;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  text-align: center; border: 1px solid var(--c-bg-mid);
   position: relative; overflow: hidden;
 }
 .auth-card::before {
   content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
   width: 48px; height: 3px; border-radius: 0 0 3px 3px;
-  background: linear-gradient(90deg, #8b6914, #d4a843);
+  background: linear-gradient(90deg, var(--c-dark), var(--c-primary));
 }
 .auth-card h2 {
-  font-size: 26px; font-weight: 800; color: #e0c28c;
+  font-size: 26px; font-weight: 800; color: var(--c-deep);
   margin: 0 0 4px; letter-spacing: 4px;
 }
 .auth-card .auth-subtitle {
-  font-size: 11px; color: #5a4830; margin-bottom: 32px;
-  letter-spacing: 2px; text-transform: uppercase;
+  font-size: 11px; color: var(--c-text-mid); margin-bottom: 32px;
+  letter-spacing: 2px; text-transform: uppercase; opacity: 0.6;
 }
 .auth-card input {
   width: 100%; padding: 13px 16px; margin-bottom: 14px;
-  border: 1.5px solid #3a3028; border-radius: 12px;
-  font-size: 14px; background: #1e1a14; color: #e8dcc8;
+  border: 1.5px solid var(--c-bg-mid); border-radius: 12px;
+  font-size: 14px; background: var(--c-bg); color: var(--c-text);
   outline: none; transition: border 0.25s, box-shadow 0.25s;
   box-sizing: border-box;
 }
 .auth-card input:focus {
-  border-color: #b8942f;
-  box-shadow: 0 0 0 3px rgba(184,148,47,0.12);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent);
 }
-.auth-card input::placeholder { color: #5a5040; }
+.auth-card input::placeholder { color: var(--c-text-mid); opacity: 0.5; }
 .auth-card .auth-btn {
   width: 100%; padding: 13px; border: none; border-radius: 12px;
   font-size: 15px; font-weight: 700; cursor: pointer;
@@ -755,24 +755,25 @@ body.focus-mode .month-summary { display: none !important; }
   letter-spacing: 1px;
 }
 .auth-btn-login {
-  background: linear-gradient(135deg, #8b6914, #b8942f); color: #fff;
-  box-shadow: 0 2px 12px rgba(184,148,47,0.2);
+  background: linear-gradient(135deg, var(--c-dark), var(--c-primary)); color: #fff;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--c-primary) 25%, transparent);
 }
-.auth-btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(184,148,47,0.35); }
+.auth-btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px color-mix(in srgb, var(--c-primary) 40%, transparent); }
 .auth-btn-register {
-  background: transparent; color: #a89060; border: 1.5px solid #3a3028;
+  background: transparent; color: var(--c-text-mid); border: 1.5px solid var(--c-bg-mid);
 }
-.auth-btn-register:hover { border-color: #8b6914; color: #d4a843; background: rgba(184,148,47,0.06); }
+.auth-btn-register:hover { border-color: var(--c-primary); color: var(--c-primary); background: color-mix(in srgb, var(--c-primary) 6%, transparent); }
 .auth-error {
-  color: #e57373; font-size: 12px; margin-top: 10px; min-height: 20px;
+  color: #e53935; font-size: 12px; margin-top: 10px; min-height: 20px;
   letter-spacing: 0.5px;
 }
 .btn-logout {
-  background: none; border: 1px solid #4a4038; color: #8b8b7a;
+  background: none; border: 1px solid var(--c-bg-mid); color: var(--c-text-mid);
   padding: 4px 14px; border-radius: 12px; font-size: 11px; cursor: pointer;
   font-weight: 600; transition: all 0.25s; margin-left: 8px;
+  opacity: 0.7;
 }
-.btn-logout:hover { background: #3a3028; color: #e8dcc8; border-color: #b8942f; }
+.btn-logout:hover { background: var(--c-bg-mid); color: var(--c-text); opacity: 1; }
 
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">

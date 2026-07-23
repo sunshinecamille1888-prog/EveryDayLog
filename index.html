@@ -2352,6 +2352,7 @@ function _isLocalhost() {
 function gitSyncToGitHub() {
   var btn = document.getElementById('gitSyncBtn');
   if (!btn) return;
+  if (!_isLocalhost()) { showToast('请在本地服务器使用同步功能'); return; }
 
   var key = _backupStorageKey();
   var raw;

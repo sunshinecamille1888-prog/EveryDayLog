@@ -2143,8 +2143,10 @@ function getMonthDays() {
 function drawWeekChart() {
   const days = getWeekDays();
   const entries = loadEntries();
-  const total = days.reduce((sum, d) => sum + (entries[d] ? Math.round(entries[d].duration / 60) : 0), 0);
-  drawBarChart([total], ['本周累计'], '本周累积专注时长');
+  const data = days.map(d => (entries[d] ? Math.round(entries[d].duration / 60) : 0));
+  const total = data.reduce((sum, v) => sum + v, 0);
+  const labels = days.map(d => String(parseDate(d).getDate()));
+  drawBarChart(data, labels, `本周累积专注时长：${fmtDuration(total * 60)}`);
 }
 
 function drawMonthChart() {

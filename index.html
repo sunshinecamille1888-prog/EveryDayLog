@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>每日文档 - 计时记录工具</title>
+<title>日课 - 计时记录工具</title>
 <style>
     /* ── 颜色变量 ── */
     :root {
@@ -714,51 +714,63 @@ body.focus-mode .month-summary { display: none !important; }
 #auth-overlay {
   position: fixed; inset: 0; z-index: 99999;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #1a1610 0%, #2a241c 100%);
+  background: radial-gradient(ellipse at 50% 35%, #2a241c 0%, #1a1610 70%);
 }
 .auth-card {
-  background: #2a241c; border-radius: 20px; padding: 40px 36px;
+  background: #2a241c; border-radius: 20px; padding: 48px 36px 40px;
   width: 380px; max-width: 92vw;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
   text-align: center; border: 1px solid #3a3028;
+  position: relative; overflow: hidden;
+}
+.auth-card::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 48px; height: 3px; border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, #8b6914, #d4a843);
 }
 .auth-card h2 {
-  font-size: 22px; font-weight: 800; color: #e0c28c;
-  margin-bottom: 8px; letter-spacing: 1px;
+  font-size: 26px; font-weight: 800; color: #e0c28c;
+  margin: 0 0 4px; letter-spacing: 4px;
 }
 .auth-card .auth-subtitle {
-  font-size: 12px; color: #6b5a3a; margin-bottom: 24px;
+  font-size: 11px; color: #5a4830; margin-bottom: 32px;
+  letter-spacing: 2px; text-transform: uppercase;
 }
 .auth-card input {
-  width: 100%; padding: 12px 14px; margin-bottom: 12px;
+  width: 100%; padding: 13px 16px; margin-bottom: 14px;
   border: 1.5px solid #3a3028; border-radius: 12px;
   font-size: 14px; background: #1e1a14; color: #e8dcc8;
-  outline: none; transition: border 0.2s;
+  outline: none; transition: border 0.25s, box-shadow 0.25s;
   box-sizing: border-box;
 }
-.auth-card input:focus { border-color: #b8942f; }
+.auth-card input:focus {
+  border-color: #b8942f;
+  box-shadow: 0 0 0 3px rgba(184,148,47,0.12);
+}
 .auth-card input::placeholder { color: #5a5040; }
 .auth-card .auth-btn {
-  width: 100%; padding: 12px; border: none; border-radius: 12px;
+  width: 100%; padding: 13px; border: none; border-radius: 12px;
   font-size: 15px; font-weight: 700; cursor: pointer;
-  transition: all 0.2s; margin-bottom: 8px;
+  transition: all 0.25s; margin-bottom: 10px;
+  letter-spacing: 1px;
 }
 .auth-btn-login {
   background: linear-gradient(135deg, #8b6914, #b8942f); color: #fff;
-  box-shadow: 0 2px 12px rgba(184,148,47,0.25);
+  box-shadow: 0 2px 12px rgba(184,148,47,0.2);
 }
-.auth-btn-login:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(184,148,47,0.4); }
+.auth-btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(184,148,47,0.35); }
 .auth-btn-register {
-  background: linear-gradient(135deg, #6b5a3a, #8b6914); color: #e8dcc8;
+  background: transparent; color: #a89060; border: 1.5px solid #3a3028;
 }
-.auth-btn-register:hover { transform: translateY(-1px); opacity: 0.9; }
+.auth-btn-register:hover { border-color: #8b6914; color: #d4a843; background: rgba(184,148,47,0.06); }
 .auth-error {
-  color: #e53935; font-size: 12px; margin-top: 8px; min-height: 18px;
+  color: #e57373; font-size: 12px; margin-top: 10px; min-height: 20px;
+  letter-spacing: 0.5px;
 }
 .btn-logout {
-  background: none; border: 1px solid #5a5040; color: #8b8b7a;
-  padding: 3px 12px; border-radius: 12px; font-size: 11px; cursor: pointer;
-  font-weight: 600; transition: all 0.2s; margin-left: 6px;
+  background: none; border: 1px solid #4a4038; color: #8b8b7a;
+  padding: 4px 14px; border-radius: 12px; font-size: 11px; cursor: pointer;
+  font-weight: 600; transition: all 0.25s; margin-left: 8px;
 }
 .btn-logout:hover { background: #3a3028; color: #e8dcc8; border-color: #b8942f; }
 
@@ -771,8 +783,8 @@ body.focus-mode .month-summary { display: none !important; }
 <!-- 用户鉴权覆盖层 -->
 <div id="auth-overlay">
   <div class="auth-card">
-    <h2>每日文档</h2>
-    <div class="auth-subtitle">EveryDayLog</div>
+    <h2>日课</h2>
+    <div class="auth-subtitle">RiKe</div>
     <input type="text" id="auth-username" placeholder="用户名" autocomplete="username">
     <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password">
     <div id="auth-token-group">
@@ -1562,7 +1574,7 @@ function updateTimerDisplay() {
   document.getElementById('timerDisplay').textContent = fmtTimeCompact(timerSeconds);
   updateProgress();
   // 动态更新浏览器标签页标题
-  document.title = isRunning ? '剩余 ' + fmtTimeCompact(timerSeconds) + ' - 每日文档' : '每日文档';
+  document.title = isRunning ? '剩余 ' + fmtTimeCompact(timerSeconds) + ' - 日课' : '日课';
 }
 
 function updateProgress() {
@@ -1629,7 +1641,7 @@ function pauseTimer() {
   clearInterval(timerInterval);
   document.getElementById('btnStart').style.display = '';
   document.getElementById('btnPause').style.display = 'none';
-  document.title = '每日文档';
+  document.title = '日课';
 }
 
 // ====== 全屏专注模式 ======

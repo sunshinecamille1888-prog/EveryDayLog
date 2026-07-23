@@ -3769,6 +3769,8 @@ function getCatName(catId) {
   return found ? found.name : catId;
 }
 
+let ledgerSaving = false;
+
 function getLedgerData() {
   try { return JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]'); }
   catch(e) { return []; }
@@ -3780,22 +3782,28 @@ function getDayTransactions(dateStr) {
 }
 
 function addLedgerEntry() {
-  const type = document.getElementById('lType').value;
-  const amount = parseFloat(document.getElementById('lAmount').value);
-  const category = document.getElementById('lCategory').value;
-  const note = document.getElementById('lNote').value.trim();
-  if (isNaN(amount) || amount <= 0) { showToast('请输入有效金额'); return; }
-  const data = getLedgerData();
-  const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  data.push({ id: Date.now() + Math.random(), date: currentDate, type, amount, category, note, time: timeStr });
-  saveLedgerData(data);
-  document.getElementById('lAmount').value = '';
-  document.getElementById('lNote').value = '';
-  renderLedger();
-  const d = parseDate(currentDate);
-  renderCalendar(d.getFullYear(), d.getMonth());
-  showToast(type === 'income' ? '已记收入' : '已记支出');
+  if (ledgerSaving) return;
+  ledgerSaving = true;
+  try {
+    const type = document.getElementById('lType').value;
+    const amount = parseFloat(document.getElementById('lAmount').value);
+    const category = document.getElementById('lCategory').value;
+    const note = document.getElementById('lNote').value.trim();
+    if (isNaN(amount) || amount <= 0) { showToast('请输入有效金额'); return; }
+    const data = getLedgerData();
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    data.push({ id: Date.now() + Math.random(), date: currentDate, type, amount, category, note, time: timeStr });
+    saveLedgerData(data);
+    document.getElementById('lAmount').value = '';
+    document.getElementById('lNote').value = '';
+    renderLedger();
+    const d = parseDate(currentDate);
+    renderCalendar(d.getFullYear(), d.getMonth());
+    showToast(type === 'income' ? '已记收入' : '已记支出');
+  } finally {
+    ledgerSaving = false;
+  }
 }
 
 function deleteLedgerEntry(id) {

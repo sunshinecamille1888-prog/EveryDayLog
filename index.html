@@ -2191,6 +2191,8 @@ function drawBarChart(data, labels, title) {
   statsCtx.textAlign = 'center'; statsCtx.fillText(title, W/2, 20);
 
   const maxVal = (() => { const v = Math.max(1, ...data); return isNaN(v) ? 1 : v; })();
+  // 纵轴上界比最高柱子再高一层（取整到 5 的倍数）
+  const chartMax = Math.ceil(maxVal * 1.25 / 5) * 5;
   const barW = Math.min(40, (chartW / data.length) * 0.7);
   const gap = chartW / data.length;
 
@@ -2201,7 +2203,7 @@ function drawBarChart(data, labels, title) {
     statsCtx.beginPath(); statsCtx.moveTo(pad.left, y); statsCtx.lineTo(W - pad.right, y); statsCtx.stroke();
     statsCtx.fillStyle = '#f48fb1'; statsCtx.font = '11px -apple-system, sans-serif';
     statsCtx.textAlign = 'right';
-    statsCtx.fillText(Math.round(maxVal * i / 4), pad.left - 8, y + 4);
+    statsCtx.fillText(Math.round(chartMax * i / 4), pad.left - 8, y + 4);
   }
 
   // 柱状图

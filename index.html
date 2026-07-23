@@ -261,6 +261,9 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .btn-git-sync.syncing { background: linear-gradient(135deg, #ffb74d, #ff9800); box-shadow: 0 2px 8px rgba(255,152,0,0.3); animation: sync-pulse 0.8s infinite; }
 .btn-git-sync.synced { background: linear-gradient(135deg, #66bb6a, #43a047); box-shadow: 0 2px 8px rgba(76,175,80,0.3); }
 .btn-git-sync.sync-error { background: linear-gradient(135deg, #ef5350, #e53935); box-shadow: 0 2px 8px rgba(229,57,53,0.3); }
+.btn-backup.syncing { background: linear-gradient(135deg, #ffb74d, #ff9800); box-shadow: 0 2px 8px rgba(255,152,0,0.3); animation: sync-pulse 0.8s infinite; }
+.btn-backup.synced { background: linear-gradient(135deg, #66bb6a, #43a047); box-shadow: 0 2px 8px rgba(76,175,80,0.3); }
+.btn-backup.sync-error { background: linear-gradient(135deg, #ef5350, #e53935); box-shadow: 0 2px 8px rgba(229,57,53,0.3); }
 @keyframes sync-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; box-shadow: 0 4px 16px rgba(233,30,99,0.3); }
@@ -3820,13 +3823,51 @@ function escHtml(s) { const d = document.createElement('div'); d.textContent = s
 
 /* ═══════════════════ 完整备份 ═══════════════════ */
 function exportFullBackup() {
-  const entries = loadEntries();
-  const ledger = getLedgerData();
-  const backup = { version: 1, exportedAt: new Date().toISOString(), entries, ledger };
-  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + new Date().getFullYear() + '.json', 'application/json;charset=utf-8');
-  showToast('完整备份已导出');
-  // 触发 git commit + push
-  _triggerGitAction();
+  if (!_isLocalhost()) { showToast('请在本地服务器使用同步功能'); return; }
+
+  var btn = document.getElementById('fullBackupBtn');
+  if (!btn) return;
+
+  var entries = loadEntries();
+  var ledger = getLedgerData();
+  var backup = { version: 1, exportedAt: new Date().toISOString(), entries, ledger };
+  var filename = 'backup-' + new Date().getFullYear() + '.json';
+  var content = JSON.stringify(backup, null, 2);
+
+  btn.classList.add('syncing');
+  btn.classList.remove('synced', 'sync-error');
+  btn.textContent = '同步中...';
+  btn.disabled = true;
+
+  fetch(location.origin + '/api/git-sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: filename, content: content })
+  })
+  .then(function(resp) {
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.json();
+  })
+  .then(function() {
+    btn.classList.remove('syncing');
+    btn.classList.add('synced');
+    btn.textContent = '已同步 \u2713';
+    setTimeout(function() {
+      btn.classList.remove('synced');
+      btn.textContent = '完整备份同步';
+      btn.disabled = false;
+    }, 2000);
+  })
+  .catch(function() {
+    btn.classList.remove('syncing');
+    btn.classList.add('sync-error');
+    btn.textContent = '同步失败';
+    setTimeout(function() {
+      btn.classList.remove('sync-error');
+      btn.textContent = '完整备份同步';
+      btn.disabled = false;
+    }, 2000);
+  });
 }
 
 /* 月度归档：导出上月 + 历史全量数据 → backup-YYYY.json */

@@ -49,14 +49,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
             commit_done = result.returncode == 0
 
-            # git push
+            # git push (失败时自动 pull 整合远程后再推)
             push_result = subprocess.run(
                 ["git", "push"],
                 cwd=ROOT, capture_output=True, timeout=30
             )
 
+            if push_result.returncode != 0:
+                err = push_result.stderr.decode(errors="replace")
+                if "rejected" in err or "fetch first" in err:
+                    # 远程有更新的提交，拉取整合
+                    pull_result = subprocess.run(
+                        ["git", "pull", "--rebase", "-X", "theirs"],
+                        cwd=ROOT, capture_output=True, timeout=30
+                    )
+                    if pull_result.returncode == 0:
+                        # rebase 成功，重新 push
+                        push_result = subprocess.run(
+                            ["git", "push"],
+                            cwd=ROOT, capture_output=True, timeout=30
+                        )
+
             push_done = push_result.returncode == 0
-            push_msg = push_result.stderr.decode().strip() if push_result.stderr else ""
+            push_msg = push_result.stderr.decode(errors="replace").strip() if push_result.stderr else ""
 
             self._json_response(200, {
                 "ok": True,

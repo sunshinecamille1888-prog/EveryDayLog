@@ -2143,8 +2143,8 @@ function getMonthDays() {
 function drawWeekChart() {
   const days = getWeekDays();
   const entries = loadEntries();
-  const data = days.map(d => (entries[d] ? Math.round(entries[d].duration / 60) : 0));
-  drawBarChart(data, days.map(d => shortDate(d)), '本周每日专注时长（分钟）');
+  const total = days.reduce((sum, d) => sum + (entries[d] ? Math.round(entries[d].duration / 60) : 0), 0);
+  drawBarChart([total], ['本周累计'], '本周累积专注时长');
 }
 
 function drawMonthChart() {
@@ -2220,7 +2220,8 @@ function drawBarChart(data, labels, title) {
     if (v > 0) {
       statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 11px -apple-system, sans-serif';
       statsCtx.textAlign = 'center';
-      statsCtx.fillText(v, x + barW/2, y - 4);
+      const label = (data.length === 1) ? fmtDuration(v * 60) : v;
+      statsCtx.fillText(label, x + barW/2, y - 4);
     }
 
     // X轴标签（仅≤7个全量渲染；超过7个时仅渲染1号/5的倍数/最后一天）

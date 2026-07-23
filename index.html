@@ -2145,15 +2145,18 @@ function drawWeekChart() {
   const entries = loadEntries();
   const data = days.map(d => (entries[d] ? Math.round(entries[d].duration / 60) : 0));
   const total = data.reduce((sum, v) => sum + v, 0);
-  const labels = days.map(d => String(parseDate(d).getDate()));
+  const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const labels = days.map(d => dayNames[parseDate(d).getDay()]);
   drawBarChart(data, labels, `本周累积专注时长：${fmtDuration(total * 60)}`);
 }
 
 function drawMonthChart() {
   const days = getMonthDays();
   const entries = loadEntries();
-  const total = days.reduce((sum, d) => sum + (entries[d] ? Math.round(entries[d].duration / 60) : 0), 0);
-  drawBarChart([total], ['本月累计'], '本月累积专注时长');
+  const data = days.map(d => (entries[d] ? Math.round(entries[d].duration / 60) : 0));
+  const total = data.reduce((sum, v) => sum + v, 0);
+  const labels = days.map(d => String(parseDate(d).getDate()));
+  drawBarChart(data, labels, `本月累积专注时长：${fmtDuration(total * 60)}`);
 }
 
 function drawBarChart(data, labels, title) {
@@ -2222,7 +2225,7 @@ function drawBarChart(data, labels, title) {
     if (v > 0) {
       statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 11px -apple-system, sans-serif';
       statsCtx.textAlign = 'center';
-      const label = (data.length === 1) ? fmtDuration(v * 60) : v;
+      const label = v;
       statsCtx.fillText(label, x + barW/2, y - 4);
     }
 

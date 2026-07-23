@@ -1152,9 +1152,7 @@ function setDate(dateStr) {
 
   const ts = document.getElementById('dateTimerSummary');
   if (entry.duration) {
-    const m = Math.floor(entry.duration / 60);
-    const s = entry.duration % 60;
-    ts.textContent = `已计时 ${m}分${s}秒`;
+    ts.textContent = `已计时 ${fmtDuration(entry.duration)}`;
   } else { ts.textContent = ''; }
 
   updateSessionInfo(entry);
@@ -1268,8 +1266,7 @@ function selectDropdownTab(tab, label) {
 function updateSessionInfo(dur) {
   const info = document.getElementById('sessionInfo');
   if (dur > 0) {
-    const m = Math.floor(dur / 60); const s = dur % 60;
-    info.textContent = `累计 ${m}分${s}秒`;
+    info.textContent = `累计 ${fmtDuration(dur)}`;
   } else { info.textContent = ''; }
 }
 

@@ -3737,7 +3737,10 @@ function getDailyQuote() {
 }
 function showDailyQuote() {
   const el = document.getElementById('dailyQuote');
-  if (el) el.textContent = '「' + getDailyQuote() + '」—— 曾仕强';
+  if (!el) return;
+  try { var quote = getDailyQuote(); } catch(e) { quote = ''; }
+  if (quote) el.textContent = '「' + quote + '」—— 曾仕强';
+  else el.textContent = '';
 }
 function setMood(val) {
   currentMood = val;

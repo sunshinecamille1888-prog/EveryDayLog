@@ -4031,6 +4031,8 @@ function toggleSchedule() {
 
 // 页面加载时恢复定时器
 try { initScheduleUI(); } catch(e) {}
+// 页面加载时检查 GitHub 同步按钮状态
+try { _checkGitSyncBtn(); } catch(e) {}
 
 /* 挂载到现有 setDate / 日期切换 */
 const _origSetDate = setDate;

@@ -2160,6 +2160,7 @@ function drawBarChart(data, labels, title) {
   }
 
   // 柱状图
+  window._barRects = [];
   data.forEach((v, i) => {
     const x = pad.left + gap * i + (gap - barW) / 2;
     const barH = (v / maxVal) * chartH;

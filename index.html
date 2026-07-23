@@ -1066,10 +1066,6 @@ body.focus-mode .month-summary { display: none !important; }
           <button class="btn-git-sync" id="gitSyncBtn" onclick="exportMonthlyArchive()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
-          <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_/github_pat_)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" oninput="saveGitToken()" onchange="saveGitToken()" autocomplete="off">
-          <span class="schedule-label" style="margin-left:4px;font-size:10px;color:#888;cursor:pointer;" onclick="showGitTokenHelp()">?</span>
-        </div>
-        <div class="export-row" style="margin-top:10px;">
           <span class="schedule-label">定时备份:</span>
           <select id="scheduleMode" class="schedule-unit" onchange="onScheduleModeChange()">
             <option value="daily">每天</option>
@@ -1165,8 +1161,6 @@ function toggleAuthMode() {
 }
 function showApp() {
   document.getElementById('auth-overlay').style.display = 'none';
-  var ti = document.getElementById('gitTokenInput');
-  if (ti) { var t = ''; try { t = localStorage.getItem(GIT_TOKEN_KEY) || ''; } catch(e) {} if (t) ti.value = t; }
   if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
 }
 function logout() {
@@ -1176,7 +1170,6 @@ function logout() {
   document.getElementById('auth-password').value = '';
   document.getElementById('auth-token').value = '';
   showLoginMode();
-  var ti = document.getElementById('gitTokenInput'); if (ti) ti.value = '';
   var t = document.getElementById('toast'); if (t) t.classList.remove('show');
 }
 async function tryAutoLogin() {
@@ -2710,26 +2703,6 @@ function _getGitToken() {
   try { return localStorage.getItem(GIT_TOKEN_KEY) || ''; } catch(e) { return ''; }
 }
 
-function saveGitToken() {
-  var input = document.getElementById('gitTokenInput');
-  if (!input) return;
-  var v = input.value.trim();
-  try {
-    if (v) localStorage.setItem(GIT_TOKEN_KEY, v);
-    else localStorage.removeItem(GIT_TOKEN_KEY);
-  } catch(e) {}
-  // 防抖：用 setTimeout 聚合频繁触发（如 oninput），避免连续写入
-  if (saveGitToken._timer) clearTimeout(saveGitToken._timer);
-  saveGitToken._timer = setTimeout(function() {
-    saveGitToken._timer = null;
-    _checkGitSyncBtn();
-  }, 300);
-}
-
-function showGitTokenHelp() {
-  showToast('GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens，需 Contents: Read and Write');
-}
-
 function _canGitSync() {
   return !!_getGitToken();
 }
@@ -2867,7 +2840,7 @@ function _gitSyncFetch(body) {
 function gitSyncToGitHub() {
   var btn = document.getElementById('gitSyncBtn');
   if (!btn) return;
-  if (!_canGitSync()) { showToast('请先输入 GitHub Token'); return; }
+  if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
 
   // 先同步最新 entries → backup，确保累积时间等数据是最新的
   try {
@@ -2938,20 +2911,12 @@ function gitSyncToGitHub() {
 }
 
 function _checkGitSyncBtn() {
-  // 始终从 localStorage 回填 token，确保输入框与存储同步
-  var tokenInput = document.getElementById('gitTokenInput');
-  if (tokenInput) {
-    var saved = _getGitToken();
-    if (saved && tokenInput.value !== saved) tokenInput.value = saved;
-    else if (!saved && tokenInput.value) tokenInput.value = '';
-  }
-
   var gitBtn = document.getElementById('gitSyncBtn');
   var fullBtn = document.getElementById('fullBackupBtn');
 
   // 完整备份按钮：需 Token 才能同步到 GitHub
   if (!_canGitSync()) {
-    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请在上方输入 GitHub Token'; }
+    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请先登录以获取 Token'; }
   } else {
     if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
   }
@@ -4442,7 +4407,7 @@ function escHtml(s) { const d = document.createElement('div'); d.textContent = s
 
 /* ═══════════════════ 完整备份 ═══════════════════ */
 function exportFullBackup() {
-  if (!_canGitSync()) { showToast('请先输入 GitHub Token'); return; }
+  if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
 
   var btn = document.getElementById('fullBackupBtn');
   if (!btn) return;

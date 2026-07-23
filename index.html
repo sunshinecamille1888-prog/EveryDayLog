@@ -2086,23 +2086,18 @@ let currentStatsTab = 'week';
 
     if (hit) {
       tip.textContent = hit.minutes > 0 ? fmtDuration(hit.minutes * 60) : '无记录';
-      // 使用父容器相对坐标，与热力图 tooltip 定位方式一致
+      // 跟随鼠标定位，与热力图 tooltip 行为一致
       const parentRect = statsCanvas.parentElement.getBoundingClientRect();
-      const canvasRect = statsCanvas.getBoundingClientRect();
-      const tipX = (canvasRect.left - parentRect.left) + (hit.x + hit.w / 2) / scaleX;
-      const tipY = (canvasRect.top - parentRect.top) + (hit.y - 8) / scaleY;
       tip.style.display = 'block';
-      tip.style.left = tipX + 'px';
-      tip.style.top = tipY + 'px';
+      tip.style.left = (e.clientX - parentRect.left) + 'px';
+      tip.style.top = (e.clientY - parentRect.top - 10) + 'px';
       tip.style.transform = 'translate(-50%, -100%)';
     } else {
-      statsCanvas.style.cursor = '';
       tip.style.display = 'none';
     }
   });
 
   statsCanvas.addEventListener('mouseleave', function() {
-    statsCanvas.style.cursor = '';
     tip.style.display = 'none';
   });
 })();

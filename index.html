@@ -2403,6 +2403,14 @@ function gitSyncToGitHub() {
 function _checkGitSyncBtn() {
   var btn = document.getElementById('gitSyncBtn');
   if (!btn) return;
+
+  // 非本地环境：禁用
+  if (!_isLocalhost()) {
+    btn.disabled = true;
+    btn.title = '请在本地服务器使用同步功能（bash serve.sh）';
+    return;
+  }
+
   var key = _backupStorageKey();
   var hasData = false;
   try { hasData = !!localStorage.getItem(key); } catch(e) {}

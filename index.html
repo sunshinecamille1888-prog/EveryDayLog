@@ -765,6 +765,13 @@ body.focus-mode .month-summary { display: none !important; }
   background: transparent; color: var(--c-text-mid); border: 1.5px solid var(--c-bg-mid);
 }
 .auth-btn-register:hover { border-color: var(--c-primary); color: var(--c-primary); background: color-mix(in srgb, var(--c-primary) 6%, transparent); }
+.auth-toggle {
+  margin-top: 12px; font-size: 13px; color: var(--c-text-mid);
+}
+.auth-toggle a {
+  color: var(--c-primary); text-decoration: none; cursor: pointer; font-weight: 600;
+}
+.auth-toggle a:hover { text-decoration: underline; }
 .auth-error {
   color: #e53935; font-size: 12px; margin-top: 10px; min-height: 20px;
   letter-spacing: 0.5px;
@@ -796,7 +803,10 @@ body.focus-mode .month-summary { display: none !important; }
     </div>
     <div class="auth-btn-group">
       <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
-      <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()">注册</button>
+      <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()" style="display:none">注册</button>
+    </div>
+    <div class="auth-toggle" id="auth-toggle">
+      <span id="auth-toggle-text">没有账号？</span><a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()">点击注册</a>
     </div>
     <div class="auth-error" id="auth-error"></div>
   </div>
@@ -1127,11 +1137,31 @@ async function aesDecrypt(b64, pwhashHex) {
 }
 function isRegistered() { try { return !!sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return false; } }
 function getSessionPwhash() { try { return sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return null; } }
-function updateAuthForm() {
-  var reg = isRegistered();
-  document.getElementById('auth-token-group').style.display = reg ? 'none' : '';
-  document.getElementById('auth-login-btn').style.display = reg ? '' : 'none';
-  document.getElementById('auth-register-btn').style.display = reg ? 'none' : '';
+function showLoginMode() {
+  document.getElementById('auth-token-group').style.display = 'none';
+  document.getElementById('auth-login-btn').style.display = '';
+  document.getElementById('auth-register-btn').style.display = 'none';
+  var lBtn = document.getElementById('auth-login-btn');
+  if (lBtn) { lBtn.disabled = false; lBtn.textContent = '登录'; }
+  document.getElementById('auth-toggle-text').textContent = '没有账号？';
+  document.getElementById('auth-toggle-link').textContent = '点击注册';
+  document.getElementById('auth-error').textContent = '';
+}
+function toggleAuthMode() {
+  var tg = document.getElementById('auth-token-group');
+  if (tg.style.display === 'none') {
+    // 切换到注册模式
+    document.getElementById('auth-token-group').style.display = '';
+    document.getElementById('auth-login-btn').style.display = 'none';
+    document.getElementById('auth-register-btn').style.display = '';
+    var rBtn = document.getElementById('auth-register-btn');
+    if (rBtn) { rBtn.disabled = false; rBtn.textContent = '注册'; }
+    document.getElementById('auth-toggle-text').textContent = '已有账号？';
+    document.getElementById('auth-toggle-link').textContent = '点击登录';
+  } else {
+    showLoginMode();
+  }
+  document.getElementById('auth-error').textContent = '';
 }
 function showApp() {
   document.getElementById('auth-overlay').style.display = 'none';
@@ -1145,18 +1175,8 @@ function logout() {
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
   document.getElementById('auth-token').value = '';
-  document.getElementById('auth-error').textContent = '';
-  // 重置按钮状态（防止残留"注册中..."等）
-  var rBtn = document.getElementById('auth-register-btn');
-  if (rBtn) { rBtn.disabled = false; rBtn.textContent = '注册'; }
-  var lBtn = document.getElementById('auth-login-btn');
-  if (lBtn) { lBtn.disabled = false; lBtn.textContent = '登录'; }
+  showLoginMode();
   var ti = document.getElementById('gitTokenInput'); if (ti) ti.value = '';
-  // 登出后显示登录表单（用户已注册在 GitHub，无需重输 Token）
-  document.getElementById('auth-token-group').style.display = 'none';
-  document.getElementById('auth-login-btn').style.display = '';
-  document.getElementById('auth-register-btn').style.display = '';
-  // 隐藏右下角 toast（防止残留报错）
   var t = document.getElementById('toast'); if (t) t.classList.remove('show');
 }
 async function tryAutoLogin() {
@@ -1169,6 +1189,7 @@ async function tryAutoLogin() {
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
   } catch(e) {
+    showLoginMode();
     document.getElementById('auth-overlay').style.display = '';
   }
 }
@@ -1184,11 +1205,7 @@ async function handleRegister() {
   var err = document.getElementById('auth-error');
   var btn = document.getElementById('auth-register-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
-  if (!tok) {
-    // 如果 token 字段被隐藏，先展开（用户从登出后的登录表单点击注册）
-    document.getElementById('auth-token-group').style.display = '';
-    document.getElementById('auth-login-btn').style.display = 'none';
-    err.textContent = '请输入 GitHub Token'; return; }
+  if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
   if (!/^(ghp_|github_pat_)/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'; return; }
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
   // 清除旧的会话状态，防止残留数据干扰
@@ -1240,27 +1257,29 @@ async function handleLogin() {
   var u = document.getElementById('auth-username').value.trim();
   var p = document.getElementById('auth-password').value;
   var err = document.getElementById('auth-error');
+  var btn = document.getElementById('auth-login-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
+  btn.disabled = true; btn.textContent = '登录中...'; err.textContent = '';
   var ph = await sha256(p);
   try {
     // 从 GitHub Pages 拉取远程凭据（公开仓库无需 token，no-cache 避免浏览器缓存旧数据）
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
     if (!res.ok) {
-      if (res.status === 404) { err.textContent = '尚未注册，请先注册'; updateAuthForm(); return; }
+      if (res.status === 404) { toggleAuthMode(); err.textContent = '用户不存在，请先注册'; btn.disabled = false; btn.textContent = '登录'; return; }
       throw new Error('无法获取远程凭据 (' + res.status + ')');
     }
     var remote = await res.json();
-    if (remote.user !== u || remote.pwhash !== ph) { err.textContent = '用户名或密码错误'; return; }
+    if (remote.user !== u || remote.pwhash !== ph) { err.textContent = '用户名或密码错误'; btn.disabled = false; btn.textContent = '登录'; return; }
     var tok = await aesDecrypt(remote.token_enc, ph);
     // 写入 sessionStorage（当前会话自动登录） + localStorage（token 明文供其他模块使用）
     sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
-  } catch(e) { err.textContent = '登录失败: ' + (e.message || e); }
+  } catch(e) { err.textContent = '登录失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '登录'; }
 }
 (function initAuth() {
-  updateAuthForm();
+  showLoginMode();
   if (isRegistered()) { tryAutoLogin(); return; }
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-password').addEventListener('keydown', function(e) {

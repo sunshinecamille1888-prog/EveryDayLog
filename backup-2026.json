@@ -51,15 +51,22 @@
       "mood": 5
     },
     "2026-06-01": {
-      "content": "六月",
+      "content": "",
       "duration": 0,
-      "templateContents": {
-        "学习笔记": "六月"
-      },
+      "templateContents": {},
       "mood": 5
     }
   },
   "ledger": [
+    {
+      "id": 1784800201036.836,
+      "date": "2026-06-01",
+      "type": "expense",
+      "amount": 8888888,
+      "category": "food",
+      "note": "",
+      "time": "17:50"
+    },
     {
       "id": 1784789781614.3699,
       "date": "2026-07-23",
@@ -113,18 +120,9 @@
       "category": "food",
       "note": "",
       "time": "17:39"
-    },
-    {
-      "id": 1784800201036.836,
-      "date": "2026-06-01",
-      "type": "expense",
-      "amount": 8888888,
-      "category": "food",
-      "note": "",
-      "time": "17:50"
     }
   ],
-  "_updatedAt": "2026-07-23T09:50:31.284Z",
+  "_updatedAt": "2026-07-23T09:51:13.938Z",
   "version": 1,
-  "exportedAt": "2026-07-23T09:50:31.284Z"
+  "exportedAt": "2026-07-23T09:51:13.938Z"
 }

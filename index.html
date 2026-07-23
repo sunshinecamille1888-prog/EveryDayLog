@@ -1145,8 +1145,18 @@ function logout() {
   document.getElementById('auth-password').value = '';
   document.getElementById('auth-token').value = '';
   document.getElementById('auth-error').textContent = '';
+  // 重置按钮状态（防止残留"注册中..."等）
+  var rBtn = document.getElementById('auth-register-btn');
+  if (rBtn) { rBtn.disabled = false; rBtn.textContent = '注册'; }
+  var lBtn = document.getElementById('auth-login-btn');
+  if (lBtn) { lBtn.disabled = false; lBtn.textContent = '登录'; }
   var ti = document.getElementById('gitTokenInput'); if (ti) ti.value = '';
-  updateAuthForm();
+  // 登出后显示登录表单（用户已注册在 GitHub，无需重输 Token）
+  document.getElementById('auth-token-group').style.display = 'none';
+  document.getElementById('auth-login-btn').style.display = '';
+  document.getElementById('auth-register-btn').style.display = '';
+  // 隐藏右下角 toast（防止残留报错）
+  var t = document.getElementById('toast'); if (t) t.classList.remove('show');
 }
 async function tryAutoLogin() {
   try {
@@ -1173,7 +1183,11 @@ async function handleRegister() {
   var err = document.getElementById('auth-error');
   var btn = document.getElementById('auth-register-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
-  if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
+  if (!tok) {
+    // 如果 token 字段被隐藏，先展开（用户从登出后的登录表单点击注册）
+    document.getElementById('auth-token-group').style.display = '';
+    document.getElementById('auth-login-btn').style.display = 'none';
+    err.textContent = '请输入 GitHub Token'; return; }
   if (!/^(ghp_|github_pat_)/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'; return; }
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
   // 清除旧的会话状态，防止残留数据干扰
@@ -1249,7 +1263,11 @@ async function handleLogin() {
   if (isRegistered()) { tryAutoLogin(); return; }
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-password').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { if (isRegistered()) handleLogin(); else handleRegister(); }
+    if (e.key === 'Enter') {
+      var lBtn = document.getElementById('auth-login-btn');
+      if (lBtn && lBtn.style.display !== 'none') handleLogin();
+      else handleRegister();
+    }
   });
   document.getElementById('auth-token').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') handleRegister();

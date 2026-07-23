@@ -2599,7 +2599,6 @@ function localSync() {
 // ====== GitHub 同步 ======
 // 直连 GitHub Contents API，token 从 localStorage 读取
 var GITHUB_REPO_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents';
-var GIT_TOKEN_KEY = 'daily-doc-git-token';
 
 function _getGitToken() {
   try { return localStorage.getItem(GIT_TOKEN_KEY) || ''; } catch(e) { return ''; }

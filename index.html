@@ -4038,6 +4038,7 @@ setDate = function(d) {
   try { _origSetDate(d); } catch(e) {}
   try { renderLedger(); } catch(e) {}
   try { renderHuangli(d); } catch(e) {}
+  try { _checkGitSyncBtn(); } catch(e) {}
 };
 /* ═══════════════════ 记账模块 end ═══════════════════ */
 

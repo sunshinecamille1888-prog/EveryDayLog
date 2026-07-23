@@ -261,6 +261,7 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .btn-git-sync.syncing { background: linear-gradient(135deg, #ffb74d, #ff9800); box-shadow: 0 2px 8px rgba(255,152,0,0.3); animation: sync-pulse 0.8s infinite; }
 .btn-git-sync.synced { background: linear-gradient(135deg, #66bb6a, #43a047); box-shadow: 0 2px 8px rgba(76,175,80,0.3); }
 .btn-git-sync.sync-error { background: linear-gradient(135deg, #ef5350, #e53935); box-shadow: 0 2px 8px rgba(229,57,53,0.3); }
+@keyframes sync-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; box-shadow: 0 4px 16px rgba(233,30,99,0.3); }
 .toast.show { opacity: 1; }

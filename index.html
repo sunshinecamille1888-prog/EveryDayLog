@@ -1808,25 +1808,6 @@ async function backupDayData() {
   } catch(e) {}
 }
 
-function exportBackup() {
-  try {
-    var backup = _loadBackup();
-    var fname = 'backup-' + _backupMonthKey() + '.json';
-    var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = fname;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(url); }, 100);
-    showToast('\u5df2\u5bfc\u51fa ' + fname);
-    // 触发 git commit + push
-    _triggerGitAction();
-  } catch(e) { showToast('\u5bfc\u51fa\u5931\u8d25'); }
-}
-
 // ====== 编辑器 ======
 function saveEntry() {
   const content = document.getElementById('editor').value.trim();

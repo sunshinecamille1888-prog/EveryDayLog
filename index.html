@@ -2298,7 +2298,7 @@ function drawHeatmap() {
         else if (intensity < 0.8) bg = '#e91e63';
         else bg = '#880e4f';
         cell.style.background = bg;
-        cell.title = `${day} ${h}:00 - ${v}分钟`;
+        cell.dataset.heatTooltip = `${day} ${h}:00 - ${v}分钟`;
       }
       grid.appendChild(cell);
     }

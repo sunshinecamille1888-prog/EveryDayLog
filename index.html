@@ -1062,7 +1062,7 @@ body.focus-mode .month-summary { display: none !important; }
       <div class="export-section">
         <div class="export-header">导出备份</div>
         <div class="export-row" style="margin-top:8px;">
-          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">完整备份同步</button>
+          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">年度备份同步</button>
           <button class="btn-git-sync" id="gitSyncBtn" onclick="exportMonthlyArchive()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
@@ -4344,21 +4344,31 @@ function initBudgetInput() {
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-/* ═══════════════════ 完整备份 ═══════════════════ */
+/* ═══════════════════ 年度备份 ═══════════════════ */
 function exportFullBackup() {
   if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
 
   var btn = document.getElementById('fullBackupBtn');
   if (!btn) return;
 
-  // 收集全量数据：所有 YYYY-MM-DD 格式的 entries + 全部 ledger
+  var year = String(new Date().getFullYear());
+  var yearPrefix = year + '-';
+
+  // 收集当年数据：筛选 YYYY-MM-DD 格式中当年开头的 entries + 当年日期的 ledger
   var allEntries = loadEntries();
   var allLedger = getLedgerData();
+  var localEntries = {};
+  Object.keys(allEntries || {}).forEach(function(k) {
+    if (k.indexOf(yearPrefix) === 0) localEntries[k] = allEntries[k];
+  });
+  var localLedger = (allLedger || []).filter(function(t) {
+    return t && t.date && t.date.indexOf(yearPrefix) === 0;
+  });
   var localData = {
     version: 1,
     exportedAt: new Date().toISOString(),
-    entries: allEntries || {},
-    ledger: allLedger || []
+    entries: localEntries,
+    ledger: localLedger
   };
 
   btn.classList.add('syncing');
@@ -4366,8 +4376,8 @@ function exportFullBackup() {
   btn.textContent = '同步中...';
   btn.disabled = true;
 
-  var filename = 'backup-full.json';
-  var snapshotKey = 'backup_full_snapshot';
+  var filename = 'backup-' + year + '.json';
+  var snapshotKey = 'backup_' + year + '_snapshot';
 
   _gitFetchRemoteData(filename)
   .then(function(remoteData) {
@@ -4429,7 +4439,7 @@ function exportFullBackup() {
       showToast('数据已是最新，无需同步');
       setTimeout(function() {
         btn.classList.remove('synced');
-        btn.textContent = '完整备份同步';
+        btn.textContent = '年度备份同步';
         btn.disabled = false;
         _checkGitSyncBtn();
       }, 2000);
@@ -4449,10 +4459,10 @@ function exportFullBackup() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');
     btn.textContent = '已同步 \u2713';
-    showToast('完整备份已同步: ' + filename);
+    showToast('年度备份已同步: ' + filename);
     setTimeout(function() {
       btn.classList.remove('synced');
-      btn.textContent = '完整备份同步';
+      btn.textContent = '年度备份同步';
       btn.disabled = false;
       _checkGitSyncBtn();
     }, 2000);
@@ -4464,7 +4474,7 @@ function exportFullBackup() {
     showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
     setTimeout(function() {
       btn.classList.remove('sync-error');
-      btn.textContent = '完整备份同步';
+      btn.textContent = '年度备份同步';
       btn.disabled = false;
       _checkGitSyncBtn();
     }, 2000);

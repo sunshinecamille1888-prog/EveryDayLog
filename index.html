@@ -1061,7 +1061,7 @@ body.focus-mode .month-summary { display: none !important; }
         <label>Token</label>
         <div class="token-display-row">
           <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
-          <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏">👁</button>
+          <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <button class="token-copy-btn" id="tokenCopyBtn" onclick="copyToken()" title="复制 Token">复制</button>
           <button class="btn-settings-inline" id="tokenEditBtn" onclick="editToken()">编辑</button>
         </div>
@@ -1710,13 +1710,13 @@ function toggleTokenVisibility() {
   if (_tokenDisplayVisible) {
     inp.type = 'text';
     if (_cachedTokenPlain) inp.value = _cachedTokenPlain;
-    btn.textContent = '🙈';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
   } else {
     inp.type = 'password';
     if (_cachedTokenPlain) {
       inp.value = _cachedTokenPlain.substring(0, 6) + '••••••••••••••' + _cachedTokenPlain.substring(_cachedTokenPlain.length - 4);
     }
-    btn.textContent = '👁';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
   }
 }
 

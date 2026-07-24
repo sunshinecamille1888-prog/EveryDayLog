@@ -343,6 +343,10 @@ body.theme-dark .export-row input[type="month"] { background: #1e1a14; color: #e
 .btn-schedule { border: none; border-radius: 14px; padding: 6px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; }
 .btn-schedule:hover { transform: translateY(-1px); opacity: 0.9; }
 .btn-schedule.stop { background: linear-gradient(135deg, #e57373, #c62828); }
+.btn-schedule.syncing { background: linear-gradient(135deg, #ffb74d, #ff9800); box-shadow: 0 2px 8px rgba(255,152,0,0.3); animation: sync-pulse 0.8s infinite; }
+.btn-schedule.synced { background: linear-gradient(135deg, #66bb6a, #43a047); box-shadow: 0 2px 8px rgba(76,175,80,0.3); }
+.btn-schedule.sync-error { background: linear-gradient(135deg, #ef5350, #e53935); box-shadow: 0 2px 8px rgba(229,57,53,0.3); }
+.btn-schedule:disabled { opacity: 0.6; pointer-events: none; }
 .schedule-status { font-size: 11px; color: var(--c-accent); margin-left: 4px; }
 body.theme-dark .schedule-input,
 body.theme-dark .schedule-unit { background: #1e1a14; color: #e8dcc8; border-color: #3a3028; }
@@ -5168,6 +5172,7 @@ function exportFullBackup(btn) {
   if (!btn) btn = document.getElementById('fullBackupBtn');
   if (!btn) return;
 
+  var _origText = btn.textContent;
   var year = String(new Date().getFullYear());
   var yearPrefix = year + '-';
 
@@ -5256,7 +5261,7 @@ function exportFullBackup(btn) {
       showToast('数据已是最新，无需同步');
       setTimeout(function() {
         btn.classList.remove('synced');
-        btn.textContent = '年度备份同步';
+        btn.textContent = _origText;
         btn.disabled = false;
         _checkGitSyncBtn();
       }, 2000);
@@ -5284,7 +5289,7 @@ function exportFullBackup(btn) {
     showToast('年度备份已同步: ' + filename);
     setTimeout(function() {
       btn.classList.remove('synced');
-      btn.textContent = '年度备份同步';
+      btn.textContent = _origText;
       btn.disabled = false;
       _checkGitSyncBtn();
     }, 2000);
@@ -5296,7 +5301,7 @@ function exportFullBackup(btn) {
     showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
     setTimeout(function() {
       btn.classList.remove('sync-error');
-      btn.textContent = '年度备份同步';
+      btn.textContent = _origText;
       btn.disabled = false;
       _checkGitSyncBtn();
     }, 2000);

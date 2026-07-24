@@ -1324,7 +1324,7 @@ body.focus-mode .month-summary { display: none !important; }
       <div class="export-section">
         <div class="export-header">导出备份</div>
         <div class="export-row" style="margin-top:8px;">
-          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">年度备份同步</button>
+          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup(this)">年度备份同步</button>
           <button class="btn-git-sync" id="gitSyncBtn" onclick="exportMonthlyArchive()">本月备份同步</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
@@ -1340,7 +1340,7 @@ body.focus-mode .month-summary { display: none !important; }
           <span id="scheduleTimeGroup">
             <input type="time" id="scheduleTime" value="00:00" class="schedule-input" style="width:auto;min-width:70px">
           </span>
-          <button id="scheduleBtn" class="btn-schedule" onclick="exportFullBackup()">启动定时备份</button>
+          <button id="scheduleBtn" class="btn-schedule" onclick="exportFullBackup(this)">启动定时备份</button>
           <span id="scheduleStatus" class="schedule-status"></span>
         </div>
       </div>
@@ -5162,10 +5162,10 @@ function initBudgetInput() {
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 /* ═══════════════════ 年度备份 ═══════════════════ */
-function exportFullBackup() {
+function exportFullBackup(btn) {
   if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
 
-  var btn = document.getElementById('fullBackupBtn');
+  if (!btn) btn = document.getElementById('fullBackupBtn');
   if (!btn) return;
 
   var year = String(new Date().getFullYear());

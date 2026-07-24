@@ -244,6 +244,8 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .tag-input { border: 2px solid var(--c-accent); border-radius: 14px; padding: 4px 8px; font-size: 12px; width: 72px; outline: none; color: var(--c-text); background: #fff; }
 .tag-input-confirm { background: var(--c-primary); color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 14px; cursor: pointer; line-height: 1; }
 .tag-current { font-size: 11px; color: var(--c-accent); font-weight: 600; padding-left: 4px; }
+.tag-selector.locked .tag-chip:not(.selected) { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
+.tag-selector.locked .tag-chip-add { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
 body.theme-dark .tag-chip { background: #3a3028; color: #b0a48a; }
 body.theme-dark .tag-chip.selected { background: linear-gradient(135deg, #8b6914, #b8942f); color: #fff; }
 body.theme-dark .tag-chip-add { border-color: #4a4038; color: #8a8068; }
@@ -2445,6 +2447,7 @@ function renderTags() {
 }
 
 function selectTag(tag) {
+  if (isRunning && currentTag) return; // 计时中不允许切换标签
   if (currentTag === tag) { currentTag = null; }
   else { currentTag = tag; }
   renderTags();
@@ -2637,6 +2640,7 @@ function startTimer() {
 function _doStartTimer() {
   if (isRunning) return;
   isRunning = true;
+  if (currentTag) document.getElementById('tagSelector').classList.add('locked');
   document.getElementById('timerDone').style.display = 'none';
   document.getElementById('btnStart').style.display = 'none';
   document.getElementById('btnPause').style.display = '';
@@ -2654,6 +2658,7 @@ function _doStartTimer() {
 function pauseTimer() {
   if (!isRunning) return;
   isRunning = false;
+  document.getElementById('tagSelector').classList.remove('locked');
   clearInterval(timerInterval);
   document.getElementById('btnStart').style.display = '';
   document.getElementById('btnPause').style.display = 'none';

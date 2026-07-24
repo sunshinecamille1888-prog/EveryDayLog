@@ -3263,8 +3263,8 @@ let currentStatsTab = 'week';
   statsCanvas.parentElement.appendChild(tip);
 
   statsCanvas.addEventListener('mousemove', function(e) {
-    // 心情曲线和支出趋势图不显示柱状图悬浮提示
-    if (currentStatsTab === 'mood' || currentStatsTab === 'ledgerTrend') {
+    // 心情曲线不显示柱状图悬浮提示
+    if (currentStatsTab === 'mood') {
       tip.style.display = 'none'; statsCanvas.style.cursor = ''; return;
     }
     const rects = window._barRects;
@@ -3280,7 +3280,19 @@ let currentStatsTab = 'week';
     const hit = rects.find(r => mx >= r.x && mx <= r.x + r.w && my >= r.y - 20 && my <= r.y + r.h);
 
     if (hit) {
-      tip.textContent = hit.minutes > 0 ? fmtDuration(hit.minutes * 60) : '无记录';
+      if (currentStatsTab === 'ledgerTrend') {
+        // 支出趋势：显示日期、合计金额及分类明细
+        const ds = hit.date.split('-');
+        let html = `<b>${ds[1]}月${ds[2]}日 合计 ¥${hit.amount.toFixed(2)}</b>`;
+        if (hit.details && hit.details.length) {
+          html += hit.details.map(d => `<br>  ${d.cat} ¥${d.amount.toFixed(2)}`).join('');
+        }
+        tip.innerHTML = html;
+        tip.style.whiteSpace = 'normal'; tip.style.textAlign = 'left';
+      } else {
+        tip.textContent = hit.minutes > 0 ? fmtDuration(hit.minutes * 60) : '无记录';
+        tip.style.whiteSpace = 'nowrap'; tip.style.textAlign = '';
+      }
       // 跟随鼠标定位，与热力图 tooltip 行为一致
       const parentRect = statsCanvas.parentElement.getBoundingClientRect();
       tip.style.display = 'block';
@@ -5201,7 +5213,7 @@ function drawLedgerTrend() {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   ctx.clearRect(0, 0, W, H);
-  window._barRects = []; // 清空柱状图悬浮区域，避免显示错误的时长格式
+  const _ledgerRects = []; // 收集每日柱子区域用于悬浮提示
 
   const months = getMonthDays();
   const txns = getLedgerData();
@@ -5254,15 +5266,24 @@ function drawLedgerTrend() {
   months.forEach((d, i) => {
     const x = pad.left + gap * i + (gap - barW) / 2;
     let stackY = pad.top + ch;
+    let topY = pad.top + ch; // 柱子顶部
+    const details = [];
     cats.forEach((cat, ci) => {
       const v = dailyMap[d][cat];
       if (v <= 0) return;
       const barH = (v / maxStack) * ch;
       stackY -= barH;
+      topY = Math.min(topY, stackY);
+      details.push({ cat: EXPENSE_CATS[ci].name, amount: v });
       ctx.fillStyle = CAT_COLORS[ci % CAT_COLORS.length];
       ctx.fillRect(x, stackY, barW, barH);
     });
+    const totalH = (pad.top + ch) - topY;
+    if (totalH > 0) {
+      _ledgerRects.push({ x, y: topY, w: barW, h: totalH, amount: dailyTotals[i], date: d, details });
+    }
   });
+  window._barRects = _ledgerRects;
 
   // X轴标签（1号/5的倍数/最后一天，避免相邻重叠）
   ctx.fillStyle = '#999'; ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';

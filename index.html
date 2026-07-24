@@ -1712,15 +1712,17 @@ async function handleRecovery() {
     var newPh = await sha256(newP);
     var newEncBackupKey = await aesEncrypt(backupKey, newPh);
 
-    // Token 需要用旧密码解密，但我们没有旧密码——恢复时要求用户提供新 Token
-    // 在恢复模式下 password 字段已是注册码，新增 token 输入
-    // 但实际流程是：找回密码后让用户在 Token 管理中重新设置 Token
-    // 这里暂时保留旧 token_enc，用户登录后可自行在 Token 管理更新
-    var newTokEnc = await aesEncrypt(await aesDecrypt(remote.token_enc, newPh), newPh);
-    // 等等，remote.token_enc 是用旧密码加密的，无法用 newPh 解密。
-    // 正确做法：注册码恢复 backup_key 后，要求用户在 Token 管理中重新配置 Token。
-    // 这里保持旧字段不变，但 encrypted_backup_key 用新密码重新加密。
-    // 重新构建 authData，保留旧 token_enc（用户需登录后在 Token 管理中手动更新）
+    // 需要 Token 才能 PUT——从 invites.json 用注册码获取恢复 Token
+    var invRes2 = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
+    var invitesData2 = await invRes2.json();
+    var invEntry2 = (invitesData2.invites || {})[codeHash];
+    if (!invEntry2) throw new Error('注册码已失效，无法获取写入权限');
+    var recoveryTok = await aesDecrypt(invEntry2.token_enc, codeHash);
+
+    // 用新密码重新加密 Token，替换旧加密值
+    remote.token_enc = await aesEncrypt(recoveryTok, newPh);
+
+    // 重新构建 authData
     var authData = JSON.stringify({
       user: remote.user,
       pwhash: newPh,
@@ -1730,17 +1732,6 @@ async function handleRecovery() {
       recovery_encrypted_backup_key: remote.recovery_encrypted_backup_key
     });
     var contentB64 = _strToB64(authData);
-
-    // 需要 Token 才能 PUT——此时我们无法获取 Token（旧密码已忘）。
-    // 在 recovery 模式下，需要用户额外提供 Token 或者使用注册码绑定 Token。
-    // 但注册码已在注册时使用，我们重新从 invites.json 获取 Token。
-    // 然而这违背了"恢复时不需要 Token"的假设。
-    // 折衷方案：如果注册码仍然有效（未从 invites.json 移除），用它重新获取 Token。
-    var invRes2 = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
-    var invitesData2 = await invRes2.json();
-    var invEntry2 = (invitesData2.invites || {})[codeHash];
-    if (!invEntry2) throw new Error('注册码已失效，无法获取写入权限');
-    var recoveryTok = await aesDecrypt(invEntry2.token_enc, codeHash);
 
     // GET sha
     var sha = null;
@@ -1763,13 +1754,13 @@ async function handleRecovery() {
       var putErr = await putRes.text();
       throw new Error('写入 GitHub 失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
     }
-    // 恢复成功：用新密码写入 sessionStorage，Token 用旧加密值（用户登录后会解密失败，需引导去 Token 管理更新）
+    // 恢复成功：新密码 + 新加密的 Token 写入 sessionStorage
     sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
     sessionStorage.setItem(SESSION_USER_KEY, u);
     sessionStorage.setItem(SESSION_BACKUP_KEY, backupKey);
     localStorage.setItem(GIT_TOKEN_KEY, recoveryTok);
-    showToast('密码已重置，请前往 Token 管理更新 Token');
+    showToast('密码已重置');
     // 恢复 auth-password placeholder
     document.getElementById('auth-password').placeholder = '密码';
     showApp();

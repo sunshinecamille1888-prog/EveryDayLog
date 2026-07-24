@@ -2718,8 +2718,17 @@ function _gitFetchRemoteData(filename) {
     'Accept': 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28'
   };
-  return fetch(url, { method: 'GET', headers: headers })
+
+  var controller = new AbortController();
+  var timedOut = false;
+  var timer = setTimeout(function() {
+    timedOut = true;
+    controller.abort();
+  }, 30000);
+
+  return fetch(url, { method: 'GET', headers: headers, signal: controller.signal })
   .then(function(resp) {
+    clearTimeout(timer);
     if (resp.status === 404) return null;
     if (!resp.ok) {
       return resp.text().then(function(t) {
@@ -2730,6 +2739,12 @@ function _gitFetchRemoteData(filename) {
       try { return JSON.parse(_b64Decode(data.content)); }
       catch(e) { return null; }
     });
+  })
+  .catch(function(e) {
+    clearTimeout(timer);
+    var msg = timedOut ? '请求超时（30s）' : (e && e.name === 'AbortError' ? '请求已中止' : (e && e.message ? e.message : String(e || '未知错误')));
+    console.error('[GitFetch] ' + msg);
+    throw new Error(msg);
   });
 }
 
@@ -2805,6 +2820,12 @@ function _gitSyncFetch(body) {
     });
   })
   .then(function(payload) {
+    // 为 PUT 阶段重置超时计时器
+    timer = setTimeout(function() {
+      timedOut = true;
+      controller.abort();
+    }, 30000);
+
     return fetch(url, {
       method: 'PUT',
       headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),

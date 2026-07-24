@@ -1353,6 +1353,7 @@ const GIT_TOKEN_KEY = 'daily-doc-git-token';
 const SESSION_PWHASH_KEY = 'edl_session_pwhash';
 const SESSION_TOKENENC_KEY = 'edl_session_tokenenc';
 const SESSION_USER_KEY = 'edl_session_user';
+const SESSION_BACKUP_KEY = 'edl_session_backup_key';
 const GITHUB_AUTH_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/auth.json';
 const GITHUB_AUTH_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/auth.json';
 const GITHUB_INVITES_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/invites.json';
@@ -1392,6 +1393,33 @@ function _genBackupKey() {
   var hex = '';
   for (var i = 0; i < 32; i++) hex += arr[i].toString(16).padStart(2, '0');
   return hex;
+}
+// 获取明文备份密钥（优先 sessionStorage 缓存，否则从远程 auth.json 解密）
+async function getBackupKey() {
+  try {
+    var cached = sessionStorage.getItem(SESSION_BACKUP_KEY);
+    if (cached) return cached;
+  } catch(e) {}
+  var ph = getSessionPwhash();
+  if (!ph) return null;
+  try {
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) return null;
+    var remote = await res.json();
+    if (!remote.encrypted_backup_key) return null;
+    var bk = await aesDecrypt(remote.encrypted_backup_key, ph);
+    try { sessionStorage.setItem(SESSION_BACKUP_KEY, bk); } catch(e) {}
+    return bk;
+  } catch(e) { return null; }
+}
+// 尝试解密备份内容：先用备份密钥 AES-GCM 解密，失败则按旧格式明文 JSON 解析
+async function _tryDecryptBackup(rawContent) {
+  var bk = await getBackupKey();
+  if (bk) {
+    try { return JSON.parse(await aesDecrypt(rawContent, bk)); } catch(e) { /* 加密解密失败，回退旧格式 */ }
+  }
+  // 旧格式（明文 JSON）
+  try { return JSON.parse(rawContent); } catch(e) { return null; }
 }
 function isRegistered() { try { return !!sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return false; } }
 function getSessionPwhash() { try { return sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return null; } }
@@ -1454,7 +1482,7 @@ function showApp() {
   updateUserDisplay();
 }
 function logout() {
-  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); sessionStorage.removeItem(SESSION_USER_KEY); } catch(e) {}
+  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); sessionStorage.removeItem(SESSION_USER_KEY); sessionStorage.removeItem(SESSION_BACKUP_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
@@ -1511,8 +1539,18 @@ async function handleRegister() {
     }
     if (!/^(ghp_|github_pat_)/.test(tok)) throw new Error('注册码对应的 Token 格式异常');
     var tokEnc = await aesEncrypt(tok, ph);
-    // 生成 backup_key
-    var backupKey = _genBackupKey();
+    // 备份密钥：优先从邀请码条目中复用（用邀请码哈希加密），保证重新注册后旧备份仍可读
+    var backupKey;
+    if (invEntry.encrypted_backup_key) {
+      try {
+        backupKey = await aesDecrypt(invEntry.encrypted_backup_key, codeHash);
+      } catch(e3) {
+        throw new Error('备份密钥解密失败，请联系管理员');
+      }
+    } else {
+      // 邀请码未绑定备份密钥（首次使用），生成新的随机备份密钥
+      backupKey = _genBackupKey();
+    }
     var encryptedBackupKey = await aesEncrypt(backupKey, ph);
     var recoveryEncryptedBackupKey = await aesEncrypt(backupKey, codeHash);
     var authData = JSON.stringify({
@@ -1543,6 +1581,7 @@ async function handleRegister() {
       sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
       sessionStorage.setItem(SESSION_TOKENENC_KEY, tokEnc);
       sessionStorage.setItem(SESSION_USER_KEY, u);
+      sessionStorage.setItem(SESSION_BACKUP_KEY, backupKey);
       localStorage.setItem(GIT_TOKEN_KEY, tok);
       showApp();
     } else {
@@ -1573,6 +1612,39 @@ async function handleLogin() {
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
     sessionStorage.setItem(SESSION_USER_KEY, u);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
+    // 缓存备份密钥
+    if (remote.encrypted_backup_key) {
+      try {
+        var _bk = await aesDecrypt(remote.encrypted_backup_key, ph);
+        sessionStorage.setItem(SESSION_BACKUP_KEY, _bk);
+      } catch(e2) {}
+    } else {
+      // 存量用户迁移：auth.json 中缺少 encrypted_backup_key，自动生成并回写
+      try {
+        var _newBk = _genBackupKey();
+        var _newEncBk = await aesEncrypt(_newBk, ph);
+        remote.encrypted_backup_key = _newEncBk;
+        if (remote.invite_code_hash) {
+          remote.recovery_encrypted_backup_key = await aesEncrypt(_newBk, remote.invite_code_hash);
+        }
+        // 静默 PUT 回 auth.json（失败不影响登录）
+        var _sha = null;
+        try {
+          var _getRes2 = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
+          if (_getRes2.ok) { var _gd2 = await _getRes2.json(); _sha = _gd2.sha; }
+          else throw new Error('获取 sha 失败');
+        } catch(e3) {}
+        var _putBody2 = { message: 'upgrade: add backup_key', content: _strToB64(JSON.stringify(remote)) };
+        if (_sha) _putBody2.sha = _sha;
+        try {
+          await fetch(GITHUB_AUTH_API, {
+            method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(_putBody2)
+          });
+        } catch(e4) {}
+        sessionStorage.setItem(SESSION_BACKUP_KEY, _newBk);
+      } catch(e5) {}
+    }
     showApp();
   } catch(e) { err.textContent = '登录失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '登录'; }
 }
@@ -1661,6 +1733,7 @@ async function handleRecovery() {
     sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
     sessionStorage.setItem(SESSION_USER_KEY, u);
+    sessionStorage.setItem(SESSION_BACKUP_KEY, backupKey);
     localStorage.setItem(GIT_TOKEN_KEY, recoveryTok);
     showToast('密码已重置，请前往 Token 管理更新 Token');
     // 恢复 auth-password placeholder
@@ -3342,9 +3415,13 @@ function localSync() {
   fetch(fname)
     .then(function(resp) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      return resp.json();
+      return resp.text();
+    })
+    .then(function(raw) {
+      return _tryDecryptBackup(raw);
     })
     .then(function(backup) {
+      if (!backup) throw new Error('解析失败');
       var r = mergeBackupData(backup);
       d.className = 'sync-dot synced';
       d.setAttribute('data-tip', '已同步 · 点击刷新');
@@ -3416,8 +3493,8 @@ function _gitFetchRemoteData(filename) {
       });
     }
     return resp.json().then(function(data) {
-      try { return JSON.parse(_b64Decode(data.content)); }
-      catch(e) { return null; }
+      var raw = _b64Decode(data.content);
+      return _tryDecryptBackup(raw);
     });
   })
   .catch(function(e) {
@@ -3575,13 +3652,27 @@ function _checkGitSyncBtn() {
     if (!file || !/\.json$/i.test(file.name)) { showToast('请拖入 JSON 备份文件'); return; }
     var reader = new FileReader();
     reader.onload = function(ev) {
+      var raw = ev.target.result;
+      // 先尝试旧格式（明文 JSON），失败再尝试解密
       try {
-        var r = mergeBackupData(JSON.parse(ev.target.result));
+        var r = mergeBackupData(JSON.parse(raw));
         var msg = '已导入 ' + file.name;
         if (r.diary) msg += ' (' + r.diary + ' 天日记)';
         if (r.ledger) msg += ' (' + r.ledger + ' 条账目)';
         showToast(msg);
-      } catch(ex) { showToast('JSON 解析失败'); }
+      } catch(ex) {
+        _tryDecryptBackup(raw).then(function(decrypted) {
+          if (decrypted) {
+            var r = mergeBackupData(decrypted);
+            var msg = '已导入(解密) ' + file.name;
+            if (r.diary) msg += ' (' + r.diary + ' 天日记)';
+            if (r.ledger) msg += ' (' + r.ledger + ' 条账目)';
+            showToast(msg);
+          } else {
+            showToast('文件解析失败，可能已损坏或不兼容');
+          }
+        }).catch(function() { showToast('文件解析失败'); });
+      }
     };
     reader.readAsText(file);
   });
@@ -5126,8 +5217,13 @@ function exportFullBackup() {
       return;
     }
 
-    // 有差异，推送合并结果
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
+    // 有差异，加密后推送合并结果
+    var _rawContent = JSON.stringify(mergedData, null, 2);
+    return getBackupKey().then(function(bk) {
+      return bk ? aesEncrypt(_rawContent, bk) : _rawContent;
+    }).then(function(encContent) {
+      return _gitSyncFetch({ filename: filename, content: encContent });
+    })
       .then(function() {
         try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}
         return 'synced';
@@ -5268,8 +5364,13 @@ function exportMonthlyArchive() {
       return;
     }
 
-    // 有差异，推送合并结果；成功后回写本地 + 更新快照
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
+    // 有差异，加密后推送合并结果；成功后回写本地 + 更新快照
+    var _rawContent = JSON.stringify(mergedData, null, 2);
+    return getBackupKey().then(function(bk) {
+      return bk ? aesEncrypt(_rawContent, bk) : _rawContent;
+    }).then(function(encContent) {
+      return _gitSyncFetch({ filename: filename, content: encContent });
+    })
       .then(function() {
         try { localStorage.setItem(key, JSON.stringify(mergedData)); } catch(e) {}
         try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}

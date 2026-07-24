@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exportedAt": "2026-07-24T02:24:48.150Z",
+  "exportedAt": "2026-07-24T02:25:05.839Z",
   "entries": {
     "2026-07-23": {
       "content": "## 早餐\n\n- 花卷\n\n## 午餐\n\n- 两菜一汤一碗米饭\n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
@@ -87,6 +87,15 @@
       "category": "food",
       "note": "",
       "time": "10:11"
+    },
+    {
+      "id": 1784859903545.4778,
+      "date": "2026-07-21",
+      "type": "expense",
+      "amount": 22222,
+      "category": "food",
+      "note": "",
+      "time": "10:25"
     }
   ]
 }

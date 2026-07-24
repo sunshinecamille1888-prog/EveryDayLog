@@ -1402,15 +1402,36 @@ async function getBackupKey() {
   } catch(e) {}
   var ph = getSessionPwhash();
   if (!ph) return null;
+  // 优先从 GitHub Pages 读取（快），命中 CDN 缓存时毫秒级响应
   try {
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) return null;
-    var remote = await res.json();
-    if (!remote.encrypted_backup_key) return null;
-    var bk = await aesDecrypt(remote.encrypted_backup_key, ph);
-    try { sessionStorage.setItem(SESSION_BACKUP_KEY, bk); } catch(e) {}
-    return bk;
-  } catch(e) { return null; }
+    if (res.ok) {
+      var remote = await res.json();
+      if (remote.encrypted_backup_key) {
+        var bk = await aesDecrypt(remote.encrypted_backup_key, ph);
+        try { sessionStorage.setItem(SESSION_BACKUP_KEY, bk); } catch(e) {}
+        return bk;
+      }
+    }
+  } catch(e) {}
+  // 降级：GitHub API 直取，绕开 Pages CDN 延迟（首次登录后 Pages 可能尚未同步）
+  var tok = _getGitToken();
+  if (tok) {
+    try {
+      var apiRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
+      if (apiRes.ok) {
+        var apiData = await apiRes.json();
+        var raw = _b64Decode(apiData.content);
+        var remote2 = JSON.parse(raw);
+        if (remote2.encrypted_backup_key) {
+          var bk2 = await aesDecrypt(remote2.encrypted_backup_key, ph);
+          try { sessionStorage.setItem(SESSION_BACKUP_KEY, bk2); } catch(e) {}
+          return bk2;
+        }
+      }
+    } catch(e) {}
+  }
+  return null;
 }
 // 尝试解密备份内容：先用备份密钥 AES-GCM 解密，失败则按旧格式明文 JSON 解析
 async function _tryDecryptBackup(rawContent) {

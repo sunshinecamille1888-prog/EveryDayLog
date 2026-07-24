@@ -928,6 +928,13 @@ body.focus-mode .month-summary { display: none !important; }
 .settings-field .inline-hint {
   font-size: 10px; color: var(--c-text-mid); margin-top: 6px;
 }
+.settings-status {
+  font-size: 11px; color: var(--c-text-mid); margin-top: 6px;
+  min-height: 16px; line-height: 1.5; transition: color 0.2s;
+}
+.settings-status.ok { color: var(--c-primary); }
+.settings-status.err { color: #e53935; }
+.settings-status.loading { color: var(--c-text-mid); }
 /* Token 复制 */
 /* Token 编辑行防换行 */
 #tokenEditRow { gap: 8px; align-items: flex-start; }
@@ -983,6 +990,7 @@ body.focus-mode .month-summary { display: none !important; }
           <input type="text" id="settingsUsername" placeholder="用户名">
           <button class="btn-settings-primary" onclick="saveUsername()">保存</button>
         </div>
+        <div class="settings-status" id="statusUsername"></div>
       </div>
       <div class="settings-field">
         <label>密码</label>
@@ -1016,6 +1024,7 @@ body.focus-mode .month-summary { display: none !important; }
             <button class="btn-settings-primary" onclick="confirmChangePassword()">确认修改</button>
             <button class="btn-settings-secondary" onclick="cancelChangePw()">取消</button>
           </div>
+          <div class="settings-status" id="statusPassword"></div>
         </div>
       </div>
     </div>
@@ -1043,6 +1052,7 @@ body.focus-mode .month-summary { display: none !important; }
             <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()">保存</button>
             <button class="btn-settings-secondary" onclick="document.getElementById('tokenEditInput').value='';document.getElementById('tokenEditInput2').value='';">取消</button>
           </div>
+          <div class="settings-status" id="statusToken"></div>
         </div>
       </div>
     </div>
@@ -1675,13 +1685,14 @@ async function loadTokenDisplay() {
 async function saveToken() {
   var newTok = document.getElementById('tokenEditInput').value.trim();
   var newTok2 = document.getElementById('tokenEditInput2').value.trim();
-  if (!newTok) { showToast('请输入 Token'); return; }
-  if (!/^(ghp_|github_pat_)/.test(newTok)) { showToast('Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'); return; }
-  if (newTok !== newTok2) { showToast('两次输入的 Token 不一致'); return; }
+  if (!newTok) { setSettingsStatus('statusToken', false, '请输入 Token'); return; }
+  if (!/^(ghp_|github_pat_)/.test(newTok)) { setSettingsStatus('statusToken', false, 'Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'); return; }
+  if (newTok !== newTok2) { setSettingsStatus('statusToken', false, '两次输入的 Token 不一致'); return; }
   var ph = getSessionPwhash();
-  if (!ph) { showToast('会话已过期，请重新登录'); return; }
+  if (!ph) { setSettingsStatus('statusToken', false, '会话已过期，请重新登录'); return; }
   var btnSave = document.getElementById('tokenSaveBtn');
   btnSave.disabled = true; btnSave.textContent = '保存中...';
+  setSettingsStatus('statusToken', null, '正在保存…');
   try {
     var newTokEnc = await aesEncrypt(newTok, ph);
     // 拉取远程 auth.json 获取最新 sha
@@ -1694,7 +1705,7 @@ async function saveToken() {
 
     // 用当前 Token 做 PUT
     var curTok = _getGitToken();
-    if (!curTok) { showToast('Token 未就绪，请先登录'); btnSave.disabled = false; btnSave.textContent = '保存'; return; }
+    if (!curTok) { setSettingsStatus('statusToken', false, 'Token 未就绪，请先登录'); btnSave.disabled = false; btnSave.textContent = '保存'; return; }
     var sha = null;
     try {
       var getRes = await fetch(GITHUB_AUTH_API, {
@@ -1716,12 +1727,12 @@ async function saveToken() {
       _cachedTokenPlain = newTok;
       document.getElementById('tokenEditInput').value = '';
       document.getElementById('tokenEditInput2').value = '';
-      showToast('Token 已更新');
+      setSettingsStatus('statusToken', true, 'Token 已更新');
     } else {
       var putErr = await putRes.text();
       throw new Error('保存失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
     }
-  } catch(e) { showToast('保存 Token 失败: ' + (e.message || e)); }
+  } catch(e) { setSettingsStatus('statusToken', false, '保存 Token 失败: ' + (e.message || e)); }
   btnSave.disabled = false; btnSave.textContent = '保存';
 }
 
@@ -1764,11 +1775,20 @@ function togglePwVisibility(inputId) {
     : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
 
+function setSettingsStatus(id, ok, msg) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'settings-status' + (ok === null ? '' : (ok ? ' ok' : ' err'));
+  if (msg) { setTimeout(function(){ if (el.textContent === msg) { el.textContent = ''; el.className = 'settings-status'; } }, 3000); }
+}
+
 async function saveUsername() {
   var newU = document.getElementById('settingsUsername').value.trim();
-  if (!newU) { showToast('用户名不能为空'); return; }
+  if (!newU) { setSettingsStatus('statusUsername', false, '用户名不能为空'); return; }
   var ph = getSessionPwhash();
-  if (!ph) { showToast('会话已过期，请重新登录'); return; }
+  if (!ph) { setSettingsStatus('statusUsername', false, '会话已过期，请重新登录'); return; }
+  setSettingsStatus('statusUsername', null, '正在保存…');
   try {
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
     if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
@@ -1792,8 +1812,8 @@ async function saveUsername() {
     if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
     sessionStorage.setItem(SESSION_USER_KEY, newU);
     updateUserDisplay();
-    showToast('用户名已更新');
-  } catch(e) { showToast('用户名修改失败: ' + (e.message || e)); }
+    setSettingsStatus('statusUsername', true, '用户名已更新');
+  } catch(e) { setSettingsStatus('statusUsername', false, '保存失败: ' + (e.message || e)); }
 }
 
 // ═══ 密码修改 ═══
@@ -1821,15 +1841,16 @@ async function confirmChangePassword() {
   var oldPw = document.getElementById('settingsOldPw').value;
   var newPw = document.getElementById('settingsNewPw').value;
   var newPw2 = document.getElementById('settingsNewPw2').value;
-  if (!oldPw) { showToast('请输入旧密码'); return; }
-  if (!newPw || newPw.length < 4) { showToast('新密码至少 4 位'); return; }
-  if (newPw !== newPw2) { showToast('两次新密码不一致'); return; }
+  if (!oldPw) { setSettingsStatus('statusPassword', false, '请输入旧密码'); return; }
+  if (!newPw || newPw.length < 4) { setSettingsStatus('statusPassword', false, '新密码至少 4 位'); return; }
+  if (newPw !== newPw2) { setSettingsStatus('statusPassword', false, '两次新密码不一致'); return; }
   var oldPh = await sha256(oldPw);
+  setSettingsStatus('statusPassword', null, '正在验证…');
   try {
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
     if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
     var remote = await res.json();
-    if (remote.pwhash !== oldPh) { showToast('旧密码错误'); return; }
+    if (remote.pwhash !== oldPh) { setSettingsStatus('statusPassword', false, '旧密码错误'); return; }
     // 用旧密码解密 backup_key
     var backupKey = null;
     if (remote.encrypted_backup_key) {
@@ -1846,7 +1867,7 @@ async function confirmChangePassword() {
     var contentB64 = _strToB64(JSON.stringify(remote));
     // 需要 Token 做 PUT
     var putToken = tok;
-    if (!putToken) { showToast('无法解密现有 Token，请先在 Token 管理中更新后再修改密码'); return; }
+    if (!putToken) { setSettingsStatus('statusPassword', false, '无法解密现有 Token，请先在 Token 管理中更新后再修改密码'); return; }
     var sha = null;
     try {
       var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + putToken, 'Accept': 'application/vnd.github+json' } });
@@ -1862,9 +1883,9 @@ async function confirmChangePassword() {
     if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
     sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
     if (remote.token_enc) sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
-    cancelChangePw();
-    showToast('密码已更新');
-  } catch(e) { showToast('密码修改失败: ' + (e.message || e)); }
+    setSettingsStatus('statusPassword', true, '密码已更新');
+    setTimeout(function(){ cancelChangePw(); }, 1500);
+  } catch(e) { setSettingsStatus('statusPassword', false, '修改失败: ' + (e.message || e)); }
 }
 
 // ═══ 注册码状态显示 ═══

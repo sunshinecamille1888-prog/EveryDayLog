@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exportedAt": "2026-07-24T02:46:02.462Z",
+  "exportedAt": "2026-07-24T02:46:43.138Z",
   "entries": {
     "2026-07-23": {
       "content": "## 早餐\n\n- 花卷\n\n## 午餐\n\n- 两菜一汤一碗米饭\n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n-",
@@ -58,6 +58,14 @@
       "templateContents": {
         "今日三件事": "在点击本月备份同步，或者完整备份同步按钮"
       }
+    },
+    "2026-06-01": {
+      "content": "宝贝宝贝宝贝宝贝",
+      "duration": 0,
+      "templateContents": {
+        "今日三件事": "宝贝宝贝宝贝宝贝"
+      },
+      "mood": 4
     }
   },
   "ledger": [
@@ -96,6 +104,15 @@
       "category": "food",
       "note": "",
       "time": "10:25"
+    },
+    {
+      "id": 1784861190837.307,
+      "date": "2026-06-01",
+      "type": "expense",
+      "amount": 10000,
+      "category": "food",
+      "note": "",
+      "time": "10:46"
     }
   ]
 }

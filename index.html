@@ -853,7 +853,7 @@ body.focus-mode .month-summary { display: none !important; }
   transition: all 0.25s; margin-left: 8px; opacity: 0.7;
 }
 .user-display:hover { background: var(--c-bg-mid); opacity: 1; }
-.user-display .gear-icon { font-size: 13px; }
+
 /* 设置面板 */
 .settings-overlay {
   display: none; position: fixed; inset: 0; z-index: 1001;
@@ -1143,7 +1143,7 @@ body.focus-mode .month-summary { display: none !important; }
       </div>
       <div class="sync-dot idle" id="syncDot" data-tip="点击导入备份" onclick="localSync()" title="导入备份"></div>
 
-      <span class="user-display" id="userDisplay" onclick="openSettings()" title="账户设置"><span id="userNameDisplay"></span><span class="gear-icon">&#9881;</span></span>
+      <span class="user-display" id="userDisplay" onclick="openSettings()" title="账户设置"><span id="userNameDisplay"></span></span>
       <button class="btn-logout" id="btnLogout" onclick="logout()" title="登出">登出</button>
     </div>
 

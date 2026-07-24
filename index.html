@@ -4351,22 +4351,105 @@ function exportFullBackup() {
   var btn = document.getElementById('fullBackupBtn');
   if (!btn) return;
 
-  var entries = loadEntries();
-  var ledger = getLedgerData();
-  var localData = { version: 1, exportedAt: new Date().toISOString(), entries: entries, ledger: ledger };
-  var filename = 'backup-' + new Date().getFullYear() + '.json';
+  // 收集全量数据：所有 YYYY-MM-DD 格式的 entries + 全部 ledger
+  var allEntries = loadEntries();
+  var allLedger = getLedgerData();
+  var localData = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries: allEntries || {},
+    ledger: allLedger || []
+  };
 
   btn.classList.add('syncing');
   btn.classList.remove('synced', 'sync-error');
   btn.textContent = '同步中...';
   btn.disabled = true;
 
-  // 年度完整备份以本地为权威，直接覆盖远程，确保删除操作能同步
-  _gitSyncFetch({ filename: filename, content: JSON.stringify(localData, null, 2) })
-  .then(function() {
+  var filename = 'backup-full.json';
+  var snapshotKey = 'backup_full_snapshot';
+
+  _gitFetchRemoteData(filename)
+  .then(function(remoteData) {
+    // 双向合并 + 快照删除检测
+    remoteData = remoteData || { entries: {}, ledger: [] };
+    var rEntries = remoteData.entries || {};
+    var lEntries = localData.entries || {};
+    var rLedger = Array.isArray(remoteData.ledger) ? remoteData.ledger : [];
+    var lLedger = Array.isArray(localData.ledger) ? localData.ledger : [];
+
+    // 读取上次同步快照
+    var snapshot = {};
+    try { snapshot = JSON.parse(localStorage.getItem(snapshotKey) || '{}'); } catch(e) {}
+    var snapEntries = snapshot.entries || {};
+    var snapLedger = Array.isArray(snapshot.ledger) ? snapshot.ledger : [];
+
+    // entries: 远程全部保留，本地覆盖（冲突本地优先）
+    var mergedEntries = {};
+    Object.keys(rEntries).forEach(function(k) { mergedEntries[k] = rEntries[k]; });
+    Object.keys(lEntries).forEach(function(k) { mergedEntries[k] = lEntries[k]; });
+
+    // 删除检测：snapshot 有但 local 无 → 本地主动删除 → 从 merged 移除
+    Object.keys(snapEntries).forEach(function(k) {
+      if (!(k in lEntries)) delete mergedEntries[k];
+    });
+
+    // ledger: 本地涉及的日期以本地为准，其余保留远程
+    var localDates = {};
+    lLedger.forEach(function(t) { if (t && t.date) localDates[t.date] = true; });
+    var mergedLedger = rLedger.filter(function(t) { return !t || !t.date || !localDates[t.date]; });
+    lLedger.forEach(function(t) { mergedLedger.push(t); });
+
+    // ledger 删除检测
+    var snapDates = {};
+    snapLedger.forEach(function(t) { if (t && t.date) snapDates[t.date] = true; });
+    mergedLedger = mergedLedger.filter(function(t) {
+      if (!t || !t.date) return true;
+      if (snapDates[t.date] && !localDates[t.date]) return false;
+      return true;
+    });
+
+    var mergedData = {
+      version: localData.version || 1,
+      exportedAt: new Date().toISOString(),
+      entries: mergedEntries,
+      ledger: mergedLedger
+    };
+
+    // 排除 exportedAt 时间戳后比对
+    function _stripTs(o) {
+      var c = JSON.parse(JSON.stringify(o || {}));
+      delete c.exportedAt;
+      return c;
+    }
+    if (JSON.stringify(_stripTs(remoteData)) === JSON.stringify(_stripTs(mergedData))) {
+      btn.classList.remove('syncing');
+      btn.classList.add('synced');
+      btn.textContent = '已是最新 \u2713';
+      showToast('数据已是最新，无需同步');
+      setTimeout(function() {
+        btn.classList.remove('synced');
+        btn.textContent = '完整备份同步';
+        btn.disabled = false;
+        _checkGitSyncBtn();
+      }, 2000);
+      return;
+    }
+
+    // 有差异，推送合并结果
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
+      .then(function() {
+        try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}
+        return 'synced';
+      });
+  })
+  .then(function(result) {
+    if (result !== 'synced') return;
+
     btn.classList.remove('syncing');
     btn.classList.add('synced');
     btn.textContent = '已同步 \u2713';
+    showToast('完整备份已同步: ' + filename);
     setTimeout(function() {
       btn.classList.remove('synced');
       btn.textContent = '完整备份同步';

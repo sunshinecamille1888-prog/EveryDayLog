@@ -2617,7 +2617,7 @@ function drawHeatmap() {
 
 function showToast(msg) {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2000);
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
 
 // ====== 合并备份数据（日记 + 账本） ======
@@ -4478,10 +4478,15 @@ function exportMonthlyArchive() {
     // 比对合并结果与远程原始数据
     if (JSON.stringify(remoteData) === JSON.stringify(mergedData)) {
       btn.classList.remove('syncing');
-      btn.textContent = '本月备份同步';
-      btn.disabled = false;
+      btn.classList.add('synced');
+      btn.textContent = '已是最新 \u2713';
       showToast('数据已是最新，无需同步');
-      _checkGitSyncBtn();
+      setTimeout(function() {
+        btn.classList.remove('synced');
+        btn.textContent = '本月备份同步';
+        btn.disabled = false;
+        _checkGitSyncBtn();
+      }, 2000);
       return;
     }
 
@@ -4490,10 +4495,13 @@ function exportMonthlyArchive() {
       .then(function() {
         try { localStorage.setItem(key, JSON.stringify(mergedData)); } catch(e) {}
         try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}
+        return 'synced';  // 向下游传递成功标识，区分"跳过同步"的 undefined
       });
   })
   .then(function(result) {
-    if (result === undefined) return;
+    // result: undefined = 数据无需同步（已在 step2 内部恢复按钮）
+    //         'synced' = PUT 成功，需要更新按钮状态
+    if (result !== 'synced') return;
 
     btn.classList.remove('syncing');
     btn.classList.add('synced');

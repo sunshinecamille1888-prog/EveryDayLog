@@ -235,9 +235,14 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 
 /* 标签 */
 .tag-selector { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.tag-chip { background: var(--c-bg-light); color: var(--c-text-mid); border: 2px solid transparent; padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; user-select: none; }
+.tag-chip { background: var(--c-bg-light); color: var(--c-text-mid); border: 2px solid transparent; padding: 6px 10px 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; user-select: none; display: inline-flex; align-items: center; gap: 4px; }
 .tag-chip:hover { background: var(--c-bg); border-color: var(--c-light); }
 .tag-chip.selected { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; border-color: var(--c-primary); }
+.tag-chip-delete { display: none; width: 16px; height: 16px; line-height: 14px; text-align: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: #999; background: transparent; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.tag-chip-delete:hover { color: #fff; background: #e74c3c; }
+.tag-chip:hover .tag-chip-delete { display: inline-block; }
+.tag-chip.selected .tag-chip-delete { color: rgba(255,255,255,0.6); }
+.tag-chip.selected .tag-chip-delete:hover { color: #fff; background: rgba(255,255,255,0.25); }
 .tag-chip-add { background: none; border: 2px dashed var(--c-bg-mid); color: var(--c-light); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
 .tag-chip-add:hover { border-color: var(--c-accent); color: var(--c-accent); }
 .tag-input-wrap { display: inline-flex; gap: 4px; align-items: center; }
@@ -245,9 +250,14 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .tag-input-confirm { background: var(--c-primary); color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 14px; cursor: pointer; line-height: 1; }
 .tag-current { font-size: 11px; color: var(--c-accent); font-weight: 600; padding-left: 4px; }
 .tag-selector.locked .tag-chip:not(.selected) { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
+.tag-selector.locked .tag-chip .tag-chip-delete { display: none !important; }
 .tag-selector.locked .tag-chip-add { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
 body.theme-dark .tag-chip { background: #3a3028; color: #b0a48a; }
 body.theme-dark .tag-chip.selected { background: linear-gradient(135deg, #8b6914, #b8942f); color: #fff; }
+body.theme-dark .tag-chip-delete { color: #8a8068; }
+body.theme-dark .tag-chip-delete:hover { color: #fff; background: #c0392b; }
+body.theme-dark .tag-chip.selected .tag-chip-delete { color: rgba(255,255,255,0.5); }
+body.theme-dark .tag-chip.selected .tag-chip-delete:hover { color: #fff; background: rgba(255,255,255,0.2); }
 body.theme-dark .tag-chip-add { border-color: #4a4038; color: #8a8068; }
 body.theme-dark .tag-chip-add:hover { border-color: #b8942f; color: #b8942f; }
 body.theme-dark .tag-input { background: #1e1a14; color: #e8dcc8; border-color: #b8942f; }
@@ -2428,6 +2438,13 @@ function loadTags() {
 }
 function saveTags(tags) { try { localStorage.setItem(TAG_STORAGE_KEY, JSON.stringify(tags)); } catch(e) {} }
 
+function deleteTag(tag) {
+  var tags = loadTags().filter(function(t) { return t !== tag; });
+  saveTags(tags);
+  if (currentTag === tag) currentTag = null;
+  renderTags();
+}
+
 function renderTags() {
   const container = document.getElementById('tagSelector');
   const tags = loadTags();
@@ -2435,8 +2452,16 @@ function renderTags() {
   tags.forEach(function(t) {
     const chip = document.createElement('span');
     chip.className = 'tag-chip' + (currentTag === t ? ' selected' : '');
-    chip.textContent = t;
     chip.onclick = function() { selectTag(t); };
+    const label = document.createElement('span');
+    label.textContent = t;
+    chip.appendChild(label);
+    const del = document.createElement('span');
+    del.className = 'tag-chip-delete';
+    del.textContent = '\u00d7';
+    del.title = '删除标签';
+    del.onclick = function(e) { e.stopPropagation(); deleteTag(t); };
+    chip.appendChild(del);
     container.appendChild(chip);
   });
   const addBtn = document.createElement('span');
@@ -3412,11 +3437,11 @@ function drawBarChart(data, labels, title) {
   const gap = chartW / data.length;
 
   // Y轴
-  statsCtx.strokeStyle = '#fce4ec'; statsCtx.lineWidth = 1;
+  statsCtx.strokeStyle = '#f8bbd0'; statsCtx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + chartH * (1 - i / 4);
     statsCtx.beginPath(); statsCtx.moveTo(pad.left, y); statsCtx.lineTo(W - pad.right, y); statsCtx.stroke();
-    statsCtx.fillStyle = '#f48fb1'; statsCtx.font = '11px -apple-system, sans-serif';
+    statsCtx.fillStyle = '#6d4c5e'; statsCtx.font = '12px -apple-system, sans-serif';
     statsCtx.textAlign = 'right';
     statsCtx.fillText(Math.round(chartMax * i / 4), pad.left - 8, y + 4);
   }
@@ -3440,10 +3465,10 @@ function drawBarChart(data, labels, title) {
 
     // 数值
     if (v > 0) {
-      statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 11px -apple-system, sans-serif';
+      statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 12px -apple-system, sans-serif';
       statsCtx.textAlign = 'center';
       const label = v;
-      statsCtx.fillText(label, x + barW/2, y - 4);
+      statsCtx.fillText(label, x + barW/2, y - 6);
     }
 
     // X轴标签（仅≤7个全量渲染；超过7个时仅渲染1号/5的倍数/最后一天）
@@ -3451,7 +3476,7 @@ function drawBarChart(data, labels, title) {
     const isLast = i === labels.length - 1;
     const showLabel = data.length <= 7 || dayNum === 1 || (dayNum % 5 === 0) || isLast;
     if (showLabel) {
-      statsCtx.fillStyle = '#6d4c5e'; statsCtx.font = '11px -apple-system, sans-serif';
+      statsCtx.fillStyle = '#4a3b44'; statsCtx.font = '12px -apple-system, sans-serif';
       statsCtx.textAlign = 'center';
       statsCtx.fillText(labels[i], x + barW/2, pad.top + chartH + 16);
     }

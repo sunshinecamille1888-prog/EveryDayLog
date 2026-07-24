@@ -882,15 +882,27 @@ body.focus-mode .month-summary { display: none !important; }
 .btn-settings-inline:hover { background: var(--c-bg-mid); color: var(--c-text); }
 .btn-settings-danger {
   width: 100%; padding: 10px; border-radius: 10px; font-size: 13px;
-  font-weight: 600; cursor: pointer; border: 1.5px solid #e53935;
-  background: none; color: #e53935; transition: all 0.2s;
+  font-weight: 600; cursor: pointer; border: none;
+  background: #e53935; color: #fff; transition: all 0.2s;
 }
-.btn-settings-danger:hover { background: #e53935; color: #fff; }
+.btn-settings-danger:hover { background: #c62828; }
 .settings-pw-row { display: none; margin-top: 8px; }
 .settings-pw-row.open { display: block; }
 .settings-field .inline-hint {
-  font-size: 10px; color: var(--c-text-mid); margin-top: 2px;
+  font-size: 10px; color: var(--c-text-mid); margin-top: 6px;
 }
+/* Token 复制 */
+.token-copy-btn {
+  background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
+  padding: 6px 10px; cursor: pointer; font-size: 12px; color: var(--c-text-mid);
+  transition: all 0.2s; font-weight: 600; white-space: nowrap;
+}
+.token-copy-btn:hover { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+.token-copy-btn.copied { background: #4caf50; border-color: #4caf50; color: #fff; }
+/* Token 编辑行防换行 */
+#tokenEditRow { flex-wrap: nowrap !important; }
+#tokenEditRow .token-edit { flex: 1 1 auto; min-width: 0; }
+#tokenEditRow button { flex-shrink: 0; }
 
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -947,7 +959,7 @@ body.focus-mode .month-summary { display: none !important; }
         <label>密码</label>
         <div class="settings-field-row">
           <input type="password" id="settingsPwDisplay" value="••••••••" disabled style="flex:1;">
-          <button class="btn-settings-secondary" id="settingsPwBtn" onclick="toggleChangePw()">修改</button>
+          <button class="btn-settings-primary" id="settingsPwBtn" onclick="toggleChangePw()">修改</button>
         </div>
         <div class="settings-pw-row" id="settingsPwRow">
           <div class="settings-field" style="margin-top:8px;">
@@ -972,24 +984,22 @@ body.focus-mode .month-summary { display: none !important; }
       <h4>Token 管理</h4>
       <div class="settings-field">
         <label>注册码</label>
-        <div class="settings-field-row">
-          <input type="text" id="settingsInviteCode" placeholder="注册码">
-          <button class="btn-settings-primary" onclick="saveInviteCode()">保存</button>
-        </div>
-        <div class="inline-hint">修改后需验证 invites.json 中的有效性</div>
+        <input type="text" id="settingsInviteCode" placeholder="--" readonly
+          style="font-family:monospace;color:var(--c-text-mid);background:var(--c-bg);border:1.5px solid var(--c-bg-mid);width:100%;padding:8px 12px;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
       </div>
-      <div class="settings-field" style="margin-top:10px;">
+      <div class="settings-field" style="margin-top:12px;">
         <label>Token</label>
         <div class="token-display-row">
           <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
           <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏">👁</button>
+          <button class="token-copy-btn" id="tokenCopyBtn" onclick="copyToken()" title="复制 Token">复制</button>
           <button class="btn-settings-inline" id="tokenEditBtn" onclick="editToken()">编辑</button>
         </div>
       </div>
-      <div class="export-row" id="tokenEditRow" style="display:none;margin-top:6px;">
+      <div class="export-row" id="tokenEditRow" style="display:none;margin-top:8px;">
         <input type="text" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
-        <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()" style="margin-left:6px;">保存</button>
-        <button class="btn-settings-secondary" id="tokenCancelBtn" onclick="cancelEditToken()" style="margin-left:4px;">取消</button>
+        <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()">保存</button>
+        <button class="btn-settings-secondary" id="tokenCancelBtn" onclick="cancelEditToken()">取消</button>
       </div>
     </div>
 
@@ -1638,6 +1648,20 @@ function toggleTokenVisibility() {
   }
 }
 
+function copyToken() {
+  var plain = _cachedTokenPlain;
+  if (!plain) { showToast('Token 未加载'); return; }
+  navigator.clipboard.writeText(plain).then(function() {
+    var btn = document.getElementById('tokenCopyBtn');
+    if (btn) {
+      btn.textContent = '已复制';
+      btn.classList.add('copied');
+      setTimeout(function() { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+    }
+    showToast('Token 已复制到剪贴板');
+  }).catch(function() { showToast('复制失败，请手动复制'); });
+}
+
 function editToken() {
   document.getElementById('tokenEditRow').style.display = '';
   document.getElementById('tokenEditInput').value = _cachedTokenPlain || '';
@@ -1721,6 +1745,8 @@ function openSettings() {
   cancelChangePw();
   // 同步加载 Token 显示
   loadTokenDisplay();
+  // 加载注册码状态
+  loadInviteCodeDisplay();
 }
 
 function closeSettings() {
@@ -1829,6 +1855,23 @@ async function confirmChangePassword() {
     cancelChangePw();
     showToast('密码已更新');
   } catch(e) { showToast('密码修改失败: ' + (e.message || e)); }
+}
+
+// ═══ 注册码状态显示 ═══
+async function loadInviteCodeDisplay() {
+  var el = document.getElementById('settingsInviteCode');
+  if (!el) return;
+  el.value = '--';
+  try {
+    var ph = getSessionPwhash();
+    if (!ph) return;
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) return;
+    var remote = await res.json();
+    if (remote.invite_code_hash) {
+      el.value = '••••••••（已绑定）';
+    }
+  } catch(e) { /* 静默 */ }
 }
 
 // ═══ 注册码修改 ═══

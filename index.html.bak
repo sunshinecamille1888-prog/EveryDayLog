@@ -473,11 +473,11 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   /* 移动端头部重组 */
   .date-header { flex-wrap: wrap; gap: 6px; }
   .theme-switcher { display: none !important; }
-  .sound-toggle { display: none; }
+  .sound-toggle { font-size: 0; padding: 6px 8px; gap: 0; }
+  .sound-toggle #soundIcon { font-size: 15px; }
   .btn-calendar { padding: 6px 10px; font-size: 11px; }
-  #btnFocus { display: none; }
   .date-timer-summary { font-size: 12px; margin-left: 0; }
-
+  .device-tag { font-size: 9px; padding: 1px 6px; }
 
   /* 热力图紧凑布局 */
   .heatmap-grid { gap: 1px; font-size: 10px; grid-template-columns: 28px repeat(24, 1fr); }
@@ -490,44 +490,6 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .timer-controls { gap: 4px; }
   .ledger-panel { padding: 14px 12px; margin-top: 10px; }
   .stats-panel { padding: 14px 12px; }
-
-  /* 设置面板移动端适配 */
-  .settings-overlay { align-items: flex-start; padding: 6vh 0 10vh 0; }
-  .settings-panel { padding: 20px 16px; max-height: 88vh; }
-  .settings-section { margin-bottom: 16px; }
-  .settings-section h4 { margin-bottom: 8px; }
-  .settings-header { margin-bottom: 16px; }
-  .settings-header h3 { font-size: 16px; }
-  .settings-close { font-size: 20px; }
-  .token-display-row { gap: 4px; }
-  .token-eye-btn { padding: 6px 6px; }
-  .token-copy-btn { padding: 6px 6px; font-size: 11px; }
-  .btn-settings-inline { padding: 6px 8px; font-size: 11px; }
-  #tokenEditRow { flex-wrap: wrap !important; gap: 6px; }
-  #tokenEditRow .token-edit { flex: 1 1 100%; min-width: 0; }
-  #tokenEditRow button { flex: 1 1 auto; }
-}
-
-/* ── 超小屏适配 (≤400px) ── */
-@media (max-width: 400px) {
-  .settings-overlay { padding: 4vh 0 12vh 0; }
-  .settings-panel { padding: 16px 12px; border-radius: 12px; max-height: 92vh; }
-  .settings-section { margin-bottom: 12px; }
-  .settings-section h4 { font-size: 11px; margin-bottom: 6px; }
-  .settings-header { margin-bottom: 12px; }
-  .settings-header h3 { font-size: 15px; }
-  .settings-field { margin-bottom: 8px; }
-  .settings-field label { font-size: 11px; }
-  .settings-field-row { flex-wrap: wrap; gap: 6px; }
-  .settings-field-row input { flex: 1 1 100%; min-height: 44px; }
-  .settings-field-row button { flex: 1 1 auto; min-height: 44px; }
-  .token-display-row { gap: 3px; }
-  .token-eye-btn { padding: 5px 5px; min-height: 36px; min-width: 36px; }
-  .token-copy-btn { padding: 5px 6px; font-size: 11px; }
-  .btn-settings-inline { padding: 5px 7px; font-size: 11px; }
-  .settings-field input[type="text"],
-  .settings-field input[type="password"] { font-size: 12px; min-height: 42px; }
-  .btn-settings-danger { font-size: 12px; padding: 12px 10px; }
 }
 
 /* ── 记账面板 ── */
@@ -734,7 +696,9 @@ body.focus-mode .huangli-panel { display: none !important; }
 
 /* ── 专注模式隐藏 ── */
 body.focus-mode .month-summary { display: none !important; }
-
+.device-tag { font-size: 10px; font-weight: 600; color: #fff; background: #666; padding: 2px 8px; border-radius: 8px; flex-shrink: 0; line-height: 1.4; text-transform: uppercase; }
+.device-tag.mobile { background: #5c6bc0; }
+.device-tag.desktop { background: #78909c; }
 
 /* ── 同步按钮 ── */
 .sync-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: all 0.2s; position: relative; }
@@ -784,13 +748,11 @@ body.focus-mode .month-summary { display: none !important; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent);
 }
 .auth-card input::placeholder { color: var(--c-text-mid); opacity: 0.5; }
-.auth-btn-group {
-  display: flex; gap: 12px;
-}
 .auth-card .auth-btn {
-  flex: 1; padding: 13px; border: none; border-radius: 12px;
+  width: 100%; padding: 13px; border: none; border-radius: 12px;
   font-size: 15px; font-weight: 700; cursor: pointer;
-  transition: all 0.25s; letter-spacing: 1px;
+  transition: all 0.25s; margin-bottom: 10px;
+  letter-spacing: 1px;
 }
 .auth-btn-login {
   background: linear-gradient(135deg, var(--c-dark), var(--c-primary)); color: #fff;
@@ -801,13 +763,6 @@ body.focus-mode .month-summary { display: none !important; }
   background: transparent; color: var(--c-text-mid); border: 1.5px solid var(--c-bg-mid);
 }
 .auth-btn-register:hover { border-color: var(--c-primary); color: var(--c-primary); background: color-mix(in srgb, var(--c-primary) 6%, transparent); }
-.auth-toggle {
-  margin-top: 12px; font-size: 13px; color: var(--c-text-mid);
-}
-.auth-toggle a {
-  color: var(--c-primary); text-decoration: none; cursor: pointer; font-weight: 600;
-}
-.auth-toggle a:hover { text-decoration: underline; }
 .auth-error {
   color: #e53935; font-size: 12px; margin-top: 10px; min-height: 20px;
   letter-spacing: 0.5px;
@@ -820,140 +775,8 @@ body.focus-mode .month-summary { display: none !important; }
 }
 .btn-logout:hover { background: var(--c-bg-mid); color: var(--c-text); opacity: 1; }
 
-/* Token 管理 */
-.token-display-row { display: flex; align-items: center; gap: 5px; width: 100%; }
-.token-display {
-  flex: 1; padding: 8px 12px; border: 1.5px solid var(--c-bg-mid); border-radius: 10px;
-  font-size: 13px; background: var(--c-bg); color: var(--c-text-mid);
-  outline: none; font-family: monospace; letter-spacing: 1px;
-  box-sizing: border-box; min-width: 0;
-}
-.token-eye-btn {
-  background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
-  padding: 6px 8px; cursor: pointer; font-size: 14px; color: var(--c-text-mid);
-  transition: all 0.2s; flex-shrink: 0;
-}
-.token-eye-btn:hover { background: var(--c-bg-mid); color: var(--c-text); }
-.token-edit {
-  flex: 1; padding: 8px 12px; border: 1.5px solid var(--c-primary); border-radius: 10px;
-  font-size: 13px; background: var(--c-bg); color: var(--c-text);
-  outline: none; font-family: monospace; box-sizing: border-box;
-}
-.token-edit:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent); }
-.token-edit::placeholder { color: var(--c-text-mid); opacity: 0.5; }
-
-/* 恢复模式 */
-#auth-recovery-group { margin-top: 4px; }
-
-/* 用户入口 */
-.user-display {
-  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
-  font-size: 12px; font-weight: 600; color: var(--c-text); padding: 4px 12px;
-  border-radius: 12px; border: 1px solid var(--c-bg-mid); background: none;
-  transition: all 0.25s; margin-left: 8px; opacity: 0.7;
-}
-.user-display:hover { background: var(--c-bg-mid); opacity: 1; }
-.user-display .gear-icon { font-size: 13px; }
-/* 设置面板 */
-.settings-overlay {
-  display: none; position: fixed; inset: 0; z-index: 1001;
-  background: rgba(0,0,0,0.45); backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  justify-content: center; align-items: center;
-  overflow-y: auto; overscroll-behavior: contain;
-}
-.settings-overlay.open { display: flex; }
-.settings-panel {
-  background: var(--c-bg-card); border-radius: 18px; padding: 28px;
-  width: 460px; max-width: 92vw; max-height: 85vh; overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-  position: relative; box-sizing: border-box;
-}
-.settings-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 24px;
-}
-.settings-header h3 { font-size: 18px; font-weight: 700; color: var(--c-text); margin: 0; }
-.settings-close {
-  background: none; border: none; font-size: 22px; cursor: pointer;
-  color: var(--c-text-mid); padding: 4px 8px; border-radius: 6px;
-  transition: all 0.2s; line-height: 1;
-}
-.settings-close:hover { background: var(--c-bg-mid); color: var(--c-text); }
-.settings-section { margin-bottom: 22px; }
-.settings-section h4 {
-  font-size: 12px; color: var(--c-text-mid); margin: 0 0 10px 0;
-  padding-bottom: 6px; border-bottom: 1px solid var(--c-bg-mid);
-  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-}
-.settings-field { margin-bottom: 10px; }
-.settings-field label {
-  display: block; font-size: 11px; color: var(--c-text-mid); margin-bottom: 4px;
-  font-weight: 600;
-}
-.settings-field input[type="text"],
-.settings-field input[type="password"] {
-  width: 100%; padding: 8px 12px; border: 1.5px solid var(--c-bg-mid);
-  border-radius: 10px; font-size: 13px; background: var(--c-bg);
-  color: var(--c-text); outline: none; box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-.settings-field input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent); }
-.settings-field-row { display: flex; gap: 8px; }
-.settings-field-row input { flex: 1; }
-.settings-field-row button {
-  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap;
-}
-.btn-settings-primary {
-  background: var(--c-primary); color: #fff; border: none;
-  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; white-space: nowrap;
-}
-.btn-settings-primary:hover { opacity: 0.85; }
-.btn-settings-primary:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 25%, transparent); }
-.btn-settings-secondary {
-  background: var(--c-bg-mid); color: var(--c-text); border: none;
-  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; white-space: nowrap;
-}
-.btn-settings-secondary:hover { opacity: 0.8; }
-.btn-settings-secondary:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
-.btn-settings-inline {
-  background: none; border: 1px solid var(--c-bg-mid); color: var(--c-text-mid);
-  padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
-}
-.btn-settings-inline:hover { background: var(--c-bg-mid); color: var(--c-text); }
-.btn-settings-inline:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
-.btn-settings-danger {
-  width: 100%; padding: 10px; border-radius: 10px; font-size: 13px;
-  font-weight: 600; cursor: pointer; border: none;
-  background: #e53935; color: #fff; transition: all 0.2s;
-}
-.btn-settings-danger:hover { background: #c62828; }
-.settings-pw-row { display: none; margin-top: 8px; }
-.settings-pw-row.open { display: block; }
-.settings-field .inline-hint {
-  font-size: 10px; color: var(--c-text-mid); margin-top: 6px;
-}
-/* Token 复制 */
-.token-copy-btn {
-  background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
-  padding: 6px 10px; cursor: pointer; font-size: 12px; color: var(--c-text-mid);
-  transition: all 0.2s; font-weight: 600; white-space: nowrap; flex-shrink: 0;
-}
-.token-copy-btn:hover { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
-.token-copy-btn.copied { background: #4caf50; border-color: #4caf50; color: #fff; }
-.token-copy-btn:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
-/* Token 编辑行防换行 */
-#tokenEditRow { flex-wrap: nowrap !important; }
-#tokenEditRow .token-edit { flex: 1 1 auto; min-width: 0; }
-#tokenEditRow button { flex-shrink: 0; }
-
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="data:,">
 </head>
 <body>
 <script>(function(){try{var t=localStorage.getItem('daily-doc-theme');if(t)document.body.className=t}catch(e){}})()</script>
@@ -966,92 +789,11 @@ body.focus-mode .month-summary { display: none !important; }
     <input type="text" id="auth-username" placeholder="用户名" autocomplete="username">
     <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password">
     <div id="auth-token-group">
-      <input type="text" id="auth-invite-code" placeholder="注册码" autocomplete="off">
+      <input type="password" id="auth-token" placeholder="GitHub Token (ghp_...)" autocomplete="off">
     </div>
-    <div id="auth-recovery-group" style="display:none">
-      <input type="password" id="auth-new-password" placeholder="新密码" autocomplete="new-password">
-    </div>
-    <div class="auth-btn-group">
-      <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
-      <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()" style="display:none">注册</button>
-      <button class="auth-btn auth-btn-login" id="auth-recovery-btn" onclick="handleRecovery()" style="display:none">恢复</button>
-    </div>
-    <div class="auth-toggle" id="auth-toggle">
-      <span id="auth-toggle-text">没有账号？</span><a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()">点击注册</a>
-      <span id="auth-forgot-sep" style="display:none"> | </span><a href="javascript:void(0)" id="auth-forgot-link" style="display:none" onclick="showRecoveryMode()">忘记密码？</a>
-    </div>
+    <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
+    <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()">注册</button>
     <div class="auth-error" id="auth-error"></div>
-  </div>
-</div>
-
-<!-- 设置面板 -->
-<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
-  <div class="settings-panel">
-    <div class="settings-header">
-      <h3>账户设置</h3>
-      <button class="settings-close" onclick="closeSettings()">&times;</button>
-    </div>
-
-    <!-- 基本信息 -->
-    <div class="settings-section">
-      <h4>基本信息</h4>
-      <div class="settings-field">
-        <label>用户名</label>
-        <div class="settings-field-row">
-          <input type="text" id="settingsUsername" placeholder="用户名">
-          <button class="btn-settings-primary" onclick="saveUsername()">保存</button>
-        </div>
-      </div>
-      <div class="settings-field">
-        <label>密码</label>
-        <div class="settings-field-row">
-          <input type="password" id="settingsPwDisplay" value="••••••••" disabled style="flex:1;">
-          <button class="btn-settings-primary" id="settingsPwBtn" onclick="toggleChangePw()">修改</button>
-        </div>
-        <div class="settings-pw-row" id="settingsPwRow">
-          <div class="settings-field" style="margin-top:8px;">
-            <input type="password" id="settingsOldPw" placeholder="旧密码">
-          </div>
-          <div class="settings-field">
-            <input type="password" id="settingsNewPw" placeholder="新密码">
-          </div>
-          <div class="settings-field">
-            <input type="password" id="settingsNewPw2" placeholder="确认新密码">
-          </div>
-          <div class="settings-field-row">
-            <button class="btn-settings-primary" onclick="confirmChangePassword()">确认修改</button>
-            <button class="btn-settings-secondary" onclick="cancelChangePw()">取消</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Token 管理 -->
-    <div class="settings-section">
-      <h4>Token 管理</h4>
-      <div class="settings-field">
-        <label>注册码</label>
-        <input type="text" id="settingsInviteCode" placeholder="--" readonly
-          style="font-family:monospace;color:var(--c-text-mid);background:var(--c-bg);border:1.5px solid var(--c-bg-mid);width:100%;padding:8px 12px;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-      </div>
-      <div class="settings-field" style="margin-top:12px;">
-        <label>Token</label>
-        <div class="token-display-row">
-          <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
-          <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏">👁</button>
-          <button class="token-copy-btn" id="tokenCopyBtn" onclick="copyToken()" title="复制 Token">复制</button>
-          <button class="btn-settings-inline" id="tokenEditBtn" onclick="editToken()">编辑</button>
-        </div>
-      </div>
-      <div class="export-row" id="tokenEditRow" style="display:none;margin-top:8px;">
-        <input type="text" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
-        <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()">保存</button>
-        <button class="btn-settings-secondary" id="tokenCancelBtn" onclick="cancelEditToken()">取消</button>
-      </div>
-    </div>
-
-    <!-- 登出 -->
-    <button class="btn-settings-danger" onclick="logout();closeSettings();">退出登录</button>
   </div>
 </div>
 
@@ -1142,8 +884,7 @@ body.focus-mode .month-summary { display: none !important; }
         <div class="theme-dot t-dark" data-theme="theme-dark" onclick="setTheme('theme-dark')" title="暗色" style="background:linear-gradient(135deg, #2a241c, #1a1610);"></div>
       </div>
       <div class="sync-dot idle" id="syncDot" data-tip="点击导入备份" onclick="localSync()" title="导入备份"></div>
-
-      <span class="user-display" id="userDisplay" onclick="openSettings()" title="账户设置"><span id="userNameDisplay"></span><span class="gear-icon">&#9881;</span></span>
+      <span class="device-tag" id="deviceTag" title="当前设备类型"></span>
       <button class="btn-logout" id="btnLogout" onclick="logout()" title="登出">登出</button>
     </div>
 
@@ -1306,8 +1047,12 @@ body.focus-mode .month-summary { display: none !important; }
       <div class="export-section">
         <div class="export-header">导出备份</div>
         <div class="export-row" style="margin-top:8px;">
-          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">年度备份同步</button>
-          <button class="btn-git-sync" id="gitSyncBtn" onclick="exportMonthlyArchive()">本月备份同步</button>
+          <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup()">完整备份同步</button>
+          <button class="btn-git-sync" id="gitSyncBtn" onclick="gitSyncToGitHub()">本月备份同步</button>
+        </div>
+        <div class="export-row" style="margin-top:10px;">
+          <input type="password" id="gitTokenInput" placeholder="GitHub Token (ghp_...)" class="schedule-input" style="width:260px;font-family:monospace;font-size:11px;" oninput="saveGitToken()" onchange="saveGitToken()" autocomplete="off">
+          <span class="schedule-label" style="margin-left:4px;font-size:10px;color:#888;cursor:pointer;" onclick="showGitTokenHelp()">?</span>
         </div>
         <div class="export-row" style="margin-top:10px;">
           <span class="schedule-label">定时备份:</span>
@@ -1339,14 +1084,10 @@ body.focus-mode .month-summary { display: none !important; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ====== 用户鉴权模块 (GitHub 远程共享 + sessionStorage) ======
+// ====== 用户鉴权模块 (Web Crypto API) ======
+const AUTH_USER_KEY = 'edl_user';
+const AUTH_TOKEN_ENC_KEY = 'edl_token_enc';
 const GIT_TOKEN_KEY = 'daily-doc-git-token';
-const SESSION_PWHASH_KEY = 'edl_session_pwhash';
-const SESSION_TOKENENC_KEY = 'edl_session_tokenenc';
-const SESSION_USER_KEY = 'edl_session_user';
-const GITHUB_AUTH_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/auth.json';
-const GITHUB_AUTH_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/auth.json';
-const GITHUB_INVITES_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/invites.json';
 
 async function sha256(message) {
   var enc = new TextEncoder();
@@ -1377,614 +1118,73 @@ async function aesDecrypt(b64, pwhashHex) {
   var dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, data);
   return new TextDecoder().decode(dec);
 }
-function _genBackupKey() {
-  var arr = new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  var hex = '';
-  for (var i = 0; i < 32; i++) hex += arr[i].toString(16).padStart(2, '0');
-  return hex;
-}
-function isRegistered() { try { return !!sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return false; } }
-function getSessionPwhash() { try { return sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return null; } }
-function showLoginMode() {
-  document.getElementById('auth-token-group').style.display = 'none';
-  document.getElementById('auth-recovery-group').style.display = 'none';
-  document.getElementById('auth-login-btn').style.display = '';
-  document.getElementById('auth-register-btn').style.display = 'none';
-  document.getElementById('auth-recovery-btn').style.display = 'none';
-  document.getElementById('auth-password').placeholder = '密码';
-  var lBtn = document.getElementById('auth-login-btn');
-  if (lBtn) { lBtn.disabled = false; lBtn.textContent = '登录'; }
-  document.getElementById('auth-toggle-text').textContent = '没有账号？';
-  document.getElementById('auth-toggle-link').textContent = '点击注册';
-  document.getElementById('auth-toggle-link').onclick = toggleAuthMode;
-  document.getElementById('auth-forgot-sep').style.display = '';
-  document.getElementById('auth-forgot-link').style.display = '';
-  document.getElementById('auth-error').textContent = '';
-}
-function toggleAuthMode() {
-  var tg = document.getElementById('auth-token-group');
-  if (tg.style.display === 'none') {
-    // 切换到注册模式
-    document.getElementById('auth-token-group').style.display = '';
-    document.getElementById('auth-recovery-group').style.display = 'none';
-    document.getElementById('auth-login-btn').style.display = 'none';
-    document.getElementById('auth-register-btn').style.display = '';
-    document.getElementById('auth-recovery-btn').style.display = 'none';
-    var rBtn = document.getElementById('auth-register-btn');
-    if (rBtn) { rBtn.disabled = false; rBtn.textContent = '注册'; }
-    document.getElementById('auth-toggle-text').textContent = '已有账号？';
-    document.getElementById('auth-toggle-link').textContent = '点击登录';
-    document.getElementById('auth-toggle-link').onclick = toggleAuthMode;
-    document.getElementById('auth-forgot-sep').style.display = 'none';
-    document.getElementById('auth-forgot-link').style.display = 'none';
-  } else {
-    showLoginMode();
-  }
-  document.getElementById('auth-error').textContent = '';
-}
-function showRecoveryMode() {
-  document.getElementById('auth-token-group').style.display = 'none';
-  document.getElementById('auth-recovery-group').style.display = 'none';
-  document.getElementById('auth-login-btn').style.display = 'none';
-  document.getElementById('auth-register-btn').style.display = 'none';
-  document.getElementById('auth-recovery-btn').style.display = '';
-  var rBtn = document.getElementById('auth-recovery-btn');
-  if (rBtn) { rBtn.disabled = false; rBtn.textContent = '恢复'; }
-  document.getElementById('auth-toggle-text').textContent = '想起密码了？';
-  document.getElementById('auth-toggle-link').textContent = '返回登录';
-  document.getElementById('auth-toggle-link').onclick = showLoginMode;
-  document.getElementById('auth-forgot-sep').style.display = 'none';
-  document.getElementById('auth-forgot-link').style.display = 'none';
-  document.getElementById('auth-error').textContent = '';
-  document.getElementById('auth-password').placeholder = '注册码';
+function isRegistered() { try { return !!localStorage.getItem(AUTH_USER_KEY); } catch(e) { return false; } }
+function getStoredUser() { try { return JSON.parse(localStorage.getItem(AUTH_USER_KEY)); } catch(e) { return null; } }
+function updateAuthForm() {
+  var reg = isRegistered();
+  document.getElementById('auth-token-group').style.display = reg ? 'none' : '';
+  document.getElementById('auth-login-btn').style.display = reg ? '' : 'none';
+  document.getElementById('auth-register-btn').style.display = reg ? 'none' : '';
 }
 function showApp() {
   document.getElementById('auth-overlay').style.display = 'none';
+  var ti = document.getElementById('gitTokenInput');
+  if (ti) { var t = ''; try { t = localStorage.getItem(GIT_TOKEN_KEY) || ''; } catch(e) {} if (t) ti.value = t; }
   if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
-  updateUserDisplay();
 }
 function logout() {
-  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); sessionStorage.removeItem(SESSION_USER_KEY); } catch(e) {}
+  try { localStorage.removeItem(GIT_TOKEN_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
-  document.getElementById('auth-password').placeholder = '密码';
-  document.getElementById('auth-invite-code').value = '';
-  document.getElementById('auth-new-password').value = '';
-  showLoginMode();
-  var t = document.getElementById('toast'); if (t) t.classList.remove('show');
+  document.getElementById('auth-token').value = '';
+  document.getElementById('auth-error').textContent = '';
+  var ti = document.getElementById('gitTokenInput'); if (ti) ti.value = '';
+  updateAuthForm();
 }
-async function tryAutoLogin() {
-  try {
-    var ph = getSessionPwhash();
-    if (!ph) throw new Error('No session credentials');
-    var enc = sessionStorage.getItem(SESSION_TOKENENC_KEY);
-    if (!enc) throw new Error('Token data missing');
-    var tok = await aesDecrypt(enc, ph);
-    localStorage.setItem(GIT_TOKEN_KEY, tok);
-    showApp();
-  } catch(e) {
-    showLoginMode();
-    document.getElementById('auth-overlay').style.display = '';
-  }
-}
-function _strToB64(str) {
-  var bytes = new TextEncoder().encode(str);
-  var bin = ''; for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
-// ═══ 注册 ═══
 async function handleRegister() {
   var u = document.getElementById('auth-username').value.trim();
   var p = document.getElementById('auth-password').value;
-  var code = document.getElementById('auth-invite-code').value.trim();
+  var tok = document.getElementById('auth-token').value.trim();
   var err = document.getElementById('auth-error');
   var btn = document.getElementById('auth-register-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
-  if (!code) { err.textContent = '请输入注册码'; return; }
+  if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
+  if (!/^ghp_/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 开头'; return; }
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
-  try { sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); } catch(e) {}
   try {
     var ph = await sha256(p);
-    var codeHash = await sha256(code);
-    // fetch invites.json → 用注册码解密 Token
-    var invRes = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
-    if (!invRes.ok) throw new Error('无法获取注册码列表 (HTTP ' + invRes.status + ')');
-    var invitesData = await invRes.json();
-    var invEntry = (invitesData.invites || {})[codeHash];
-    if (!invEntry) throw new Error('注册码无效或已被使用');
-    var tok;
-    try {
-      tok = await aesDecrypt(invEntry.token_enc, codeHash);
-    } catch(e2) {
-      throw new Error('注册码解密失败，请联系管理员');
-    }
-    if (!/^(ghp_|github_pat_)/.test(tok)) throw new Error('注册码对应的 Token 格式异常');
-    var tokEnc = await aesEncrypt(tok, ph);
-    // 生成 backup_key
-    var backupKey = _genBackupKey();
-    var encryptedBackupKey = await aesEncrypt(backupKey, ph);
-    var recoveryEncryptedBackupKey = await aesEncrypt(backupKey, codeHash);
-    var authData = JSON.stringify({
-      user: u, pwhash: ph, token_enc: tokEnc,
-      invite_code_hash: codeHash,
-      encrypted_backup_key: encryptedBackupKey,
-      recovery_encrypted_backup_key: recoveryEncryptedBackupKey
-    });
-    var contentB64 = _strToB64(authData);
-    // GET auth.json sha（更新已有文件时必填）
-    var sha = null;
-    try {
-      var getRes = await fetch(GITHUB_AUTH_API, {
-        headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' }
-      });
-      if (getRes.ok) { var getData = await getRes.json(); sha = getData.sha; }
-      else if (getRes.status !== 404) throw new Error('无法访问仓库 (' + getRes.status + ')，请检查 Token 是否有 repo 权限');
-    } catch(e) {
-      if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e;
-    }
-    var putBody = { message: 'register auth', content: contentB64 };
-    if (sha) putBody.sha = sha;
-    var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody)
-    });
-    if (putRes.ok) {
-      sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
-      sessionStorage.setItem(SESSION_TOKENENC_KEY, tokEnc);
-      sessionStorage.setItem(SESSION_USER_KEY, u);
-      localStorage.setItem(GIT_TOKEN_KEY, tok);
-      showApp();
-    } else {
-      var putErr = await putRes.text();
-      throw new Error('写入 GitHub 失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
-    }
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ user: u, pwhash: ph }));
+    localStorage.setItem(AUTH_TOKEN_ENC_KEY, await aesEncrypt(tok, ph));
+    localStorage.setItem(GIT_TOKEN_KEY, tok);
+    showApp();
   } catch(e) { err.textContent = '注册失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '注册'; }
 }
-// ═══ 登录 ═══
 async function handleLogin() {
   var u = document.getElementById('auth-username').value.trim();
   var p = document.getElementById('auth-password').value;
   var err = document.getElementById('auth-error');
-  var btn = document.getElementById('auth-login-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
-  btn.disabled = true; btn.textContent = '登录中...'; err.textContent = '';
+  var stored = getStoredUser();
+  if (!stored) { err.textContent = '尚未注册，请先注册'; updateAuthForm(); return; }
   var ph = await sha256(p);
+  if (stored.user !== u || stored.pwhash !== ph) { err.textContent = '用户名或密码错误'; return; }
   try {
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) {
-      if (res.status === 404) { toggleAuthMode(); err.textContent = '用户不存在，请先注册'; btn.disabled = false; btn.textContent = '登录'; return; }
-      throw new Error('无法获取远程凭据 (' + res.status + ')');
-    }
-    var remote = await res.json();
-    if (remote.user !== u || remote.pwhash !== ph) { err.textContent = '用户名或密码错误'; btn.disabled = false; btn.textContent = '登录'; return; }
-    var tok = await aesDecrypt(remote.token_enc, ph);
-    sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
-    sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
-    sessionStorage.setItem(SESSION_USER_KEY, u);
+    var enc = localStorage.getItem(AUTH_TOKEN_ENC_KEY);
+    if (!enc) throw new Error('Token 数据缺失');
+    var tok = await aesDecrypt(enc, ph);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
-  } catch(e) { err.textContent = '登录失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '登录'; }
+  } catch(e) { err.textContent = '登录失败: ' + (e.message || e); }
 }
-// ═══ 忘记密码恢复 ═══
-async function handleRecovery() {
-  var u = document.getElementById('auth-username').value.trim();
-  var code = document.getElementById('auth-password').value;  // 恢复模式下 password 字段作为注册码输入
-  var newP = document.getElementById('auth-new-password').value;
-  var err = document.getElementById('auth-error');
-  var btn = document.getElementById('auth-recovery-btn');
-  if (!u || !code) { err.textContent = '请输入用户名和注册码'; return; }
-  if (!newP) { err.textContent = '请输入新密码'; return; }
-  btn.disabled = true; btn.textContent = '恢复中...'; err.textContent = '';
-  try {
-    var codeHash = await sha256(code);
-    // 拉取远程 auth.json
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
-    var remote = await res.json();
-    if (remote.user !== u) { err.textContent = '用户名不存在'; btn.disabled = false; btn.textContent = '恢复'; return; }
-    if (remote.invite_code_hash !== codeHash) { err.textContent = '注册码错误'; btn.disabled = false; btn.textContent = '恢复'; return; }
-    if (!remote.recovery_encrypted_backup_key) throw new Error('远程数据缺少恢复密钥');
-    // 用注册码解密恢复 backup_key
-    var backupKey;
-    try {
-      backupKey = await aesDecrypt(remote.recovery_encrypted_backup_key, codeHash);
-    } catch(e2) {
-      throw new Error('恢复密钥解密失败');
-    }
-    // 用新密码重新加密 backup_key
-    var newPh = await sha256(newP);
-    var newEncBackupKey = await aesEncrypt(backupKey, newPh);
-
-    // Token 需要用旧密码解密，但我们没有旧密码——恢复时要求用户提供新 Token
-    // 在恢复模式下 password 字段已是注册码，新增 token 输入
-    // 但实际流程是：找回密码后让用户在 Token 管理中重新设置 Token
-    // 这里暂时保留旧 token_enc，用户登录后可自行在 Token 管理更新
-    var newTokEnc = await aesEncrypt(await aesDecrypt(remote.token_enc, newPh), newPh);
-    // 等等，remote.token_enc 是用旧密码加密的，无法用 newPh 解密。
-    // 正确做法：注册码恢复 backup_key 后，要求用户在 Token 管理中重新配置 Token。
-    // 这里保持旧字段不变，但 encrypted_backup_key 用新密码重新加密。
-    // 重新构建 authData，保留旧 token_enc（用户需登录后在 Token 管理中手动更新）
-    var authData = JSON.stringify({
-      user: remote.user,
-      pwhash: newPh,
-      token_enc: remote.token_enc,
-      invite_code_hash: remote.invite_code_hash,
-      encrypted_backup_key: newEncBackupKey,
-      recovery_encrypted_backup_key: remote.recovery_encrypted_backup_key
-    });
-    var contentB64 = _strToB64(authData);
-
-    // 需要 Token 才能 PUT——此时我们无法获取 Token（旧密码已忘）。
-    // 在 recovery 模式下，需要用户额外提供 Token 或者使用注册码绑定 Token。
-    // 但注册码已在注册时使用，我们重新从 invites.json 获取 Token。
-    // 然而这违背了"恢复时不需要 Token"的假设。
-    // 折衷方案：如果注册码仍然有效（未从 invites.json 移除），用它重新获取 Token。
-    var invRes2 = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
-    var invitesData2 = await invRes2.json();
-    var invEntry2 = (invitesData2.invites || {})[codeHash];
-    if (!invEntry2) throw new Error('注册码已失效，无法获取写入权限');
-    var recoveryTok = await aesDecrypt(invEntry2.token_enc, codeHash);
-
-    // GET sha
-    var sha = null;
-    try {
-      var getRes = await fetch(GITHUB_AUTH_API, {
-        headers: { 'Authorization': 'Bearer ' + recoveryTok, 'Accept': 'application/vnd.github+json' }
-      });
-      if (getRes.ok) { var getData = await getRes.json(); sha = getData.sha; }
-      else throw new Error('无法访问仓库 (' + getRes.status + ')');
-    } catch(e) {
-      if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e;
-    }
-    var putBody = { message: 'recover auth', content: contentB64 };
-    if (sha) putBody.sha = sha;
-    var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT', headers: { 'Authorization': 'Bearer ' + recoveryTok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody)
-    });
-    if (!putRes.ok) {
-      var putErr = await putRes.text();
-      throw new Error('写入 GitHub 失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
-    }
-    // 恢复成功：用新密码写入 sessionStorage，Token 用旧加密值（用户登录后会解密失败，需引导去 Token 管理更新）
-    sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
-    sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
-    sessionStorage.setItem(SESSION_USER_KEY, u);
-    localStorage.setItem(GIT_TOKEN_KEY, recoveryTok);
-    showToast('密码已重置，请前往 Token 管理更新 Token');
-    // 恢复 auth-password placeholder
-    document.getElementById('auth-password').placeholder = '密码';
-    showApp();
-  } catch(e) { err.textContent = '恢复失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '恢复'; }
-}
-
-// ═══ Token 管理 ═══
-var _tokenDisplayVisible = false;
-var _cachedTokenPlain = null;
-
-async function loadTokenDisplay() {
-  try {
-    var ph = getSessionPwhash();
-    if (!ph) return;
-    var enc = sessionStorage.getItem(SESSION_TOKENENC_KEY);
-    if (!enc) return;
-    _cachedTokenPlain = await aesDecrypt(enc, ph);
-    var m = _cachedTokenPlain.length < 12 ? _cachedTokenPlain : _cachedTokenPlain.substring(0, 6) + '••••••••••••••' + _cachedTokenPlain.substring(_cachedTokenPlain.length - 4);
-    var inp = document.getElementById('tokenDisplayInput');
-    if (inp) inp.value = m;
-  } catch(e) { /* 解密失败，保持默认显示 */ }
-}
-
-function toggleTokenVisibility() {
-  var inp = document.getElementById('tokenDisplayInput');
-  var btn = document.getElementById('tokenEyeBtn');
-  if (!inp) return;
-  _tokenDisplayVisible = !_tokenDisplayVisible;
-  if (_tokenDisplayVisible) {
-    inp.type = 'text';
-    if (_cachedTokenPlain) inp.value = _cachedTokenPlain;
-    btn.textContent = '🙈';
-  } else {
-    inp.type = 'password';
-    if (_cachedTokenPlain) {
-      inp.value = _cachedTokenPlain.substring(0, 6) + '••••••••••••••' + _cachedTokenPlain.substring(_cachedTokenPlain.length - 4);
-    }
-    btn.textContent = '👁';
-  }
-}
-
-function copyToken() {
-  var plain = _cachedTokenPlain;
-  if (!plain) { showToast('Token 未加载'); return; }
-  navigator.clipboard.writeText(plain).then(function() {
-    var btn = document.getElementById('tokenCopyBtn');
-    if (btn) {
-      btn.textContent = '已复制';
-      btn.classList.add('copied');
-      setTimeout(function() { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
-    }
-    showToast('Token 已复制到剪贴板');
-  }).catch(function() { showToast('复制失败，请手动复制'); });
-}
-
-function editToken() {
-  document.getElementById('tokenEditRow').style.display = '';
-  document.getElementById('tokenEditInput').value = _cachedTokenPlain || '';
-  document.getElementById('tokenEditBtn').style.display = 'none';
-}
-
-function cancelEditToken() {
-  document.getElementById('tokenEditRow').style.display = 'none';
-  document.getElementById('tokenEditInput').value = '';
-  document.getElementById('tokenEditBtn').style.display = '';
-}
-
-async function saveToken() {
-  var newTok = document.getElementById('tokenEditInput').value.trim();
-  if (!newTok) { showToast('请输入 Token'); return; }
-  if (!/^(ghp_|github_pat_)/.test(newTok)) { showToast('Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'); return; }
-  var ph = getSessionPwhash();
-  if (!ph) { showToast('会话已过期，请重新登录'); return; }
-  var btnSave = document.getElementById('tokenSaveBtn');
-  btnSave.disabled = true; btnSave.textContent = '保存中...';
-  try {
-    var newTokEnc = await aesEncrypt(newTok, ph);
-    // 拉取远程 auth.json 获取最新 sha
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
-    var remote = await res.json();
-    // 更新 token_enc
-    remote.token_enc = newTokEnc;
-    var contentB64 = _strToB64(JSON.stringify(remote));
-
-    // 用当前 Token 做 PUT
-    var curTok = _getGitToken();
-    if (!curTok) { showToast('Token 未就绪，请先登录'); btnSave.disabled = false; btnSave.textContent = '保存'; return; }
-    var sha = null;
-    try {
-      var getRes = await fetch(GITHUB_AUTH_API, {
-        headers: { 'Authorization': 'Bearer ' + curTok, 'Accept': 'application/vnd.github+json' }
-      });
-      if (getRes.ok) { var d = await getRes.json(); sha = d.sha; }
-      else throw new Error('无法访问仓库 (' + getRes.status + ')');
-    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
-
-    var putBody = { message: 'update token', content: contentB64 };
-    if (sha) putBody.sha = sha;
-    var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT', headers: { 'Authorization': 'Bearer ' + curTok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody)
-    });
-    if (putRes.ok) {
-      sessionStorage.setItem(SESSION_TOKENENC_KEY, newTokEnc);
-      localStorage.setItem(GIT_TOKEN_KEY, newTok);
-      _cachedTokenPlain = newTok;
-      document.getElementById('tokenDisplayInput').value = _tokenDisplayVisible ? newTok : newTok.substring(0, 6) + '••••••••••••••' + newTok.substring(newTok.length - 4);
-      cancelEditToken();
-      showToast('Token 已更新');
-    } else {
-      var putErr = await putRes.text();
-      throw new Error('保存失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
-    }
-  } catch(e) { showToast('保存 Token 失败: ' + (e.message || e)); }
-  btnSave.disabled = false; btnSave.textContent = '保存';
-}
-
-// ═══ 设置面板 ═══
-function updateUserDisplay() {
-  var u = null;
-  try { u = sessionStorage.getItem(SESSION_USER_KEY); } catch(e) {}
-  var el = document.getElementById('userNameDisplay');
-  if (el) el.textContent = u || '用户';
-  var ud = document.getElementById('userDisplay');
-  if (ud) ud.style.display = u ? 'inline-flex' : 'none';
-}
-
-function openSettings() {
-  try {
-    var u = sessionStorage.getItem(SESSION_USER_KEY);
-    if (u) document.getElementById('settingsUsername').value = u;
-  } catch(e) {}
-  document.getElementById('settingsOverlay').classList.add('open');
-  // 重置密码修改区域
-  cancelChangePw();
-  // 同步加载 Token 显示
-  loadTokenDisplay();
-  // 加载注册码状态
-  loadInviteCodeDisplay();
-}
-
-function closeSettings() {
-  document.getElementById('settingsOverlay').classList.remove('open');
-}
-
-// ═══ 用户名修改 ═══
-async function saveUsername() {
-  var newU = document.getElementById('settingsUsername').value.trim();
-  if (!newU) { showToast('用户名不能为空'); return; }
-  var ph = getSessionPwhash();
-  if (!ph) { showToast('会话已过期，请重新登录'); return; }
-  try {
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
-    var remote = await res.json();
-    var tok = await aesDecrypt(remote.token_enc, ph);
-    remote.user = newU;
-    var contentB64 = _strToB64(JSON.stringify(remote));
-    // GET sha
-    var sha = null;
-    try {
-      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
-      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
-      else throw new Error('无法访问仓库 (' + getRes.status + ')');
-    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
-    var putBody = { message: 'update username', content: contentB64 };
-    if (sha) putBody.sha = sha;
-    var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody)
-    });
-    if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
-    sessionStorage.setItem(SESSION_USER_KEY, newU);
-    updateUserDisplay();
-    showToast('用户名已更新');
-  } catch(e) { showToast('用户名修改失败: ' + (e.message || e)); }
-}
-
-// ═══ 密码修改 ═══
-function toggleChangePw() {
-  var row = document.getElementById('settingsPwRow');
-  var btn = document.getElementById('settingsPwBtn');
-  if (row.classList.contains('open')) { cancelChangePw(); return; }
-  row.classList.add('open');
-  btn.textContent = '取消';
-  document.getElementById('settingsOldPw').value = '';
-  document.getElementById('settingsNewPw').value = '';
-  document.getElementById('settingsNewPw2').value = '';
-}
-
-function cancelChangePw() {
-  var row = document.getElementById('settingsPwRow');
-  row.classList.remove('open');
-  document.getElementById('settingsPwBtn').textContent = '修改';
-  document.getElementById('settingsOldPw').value = '';
-  document.getElementById('settingsNewPw').value = '';
-  document.getElementById('settingsNewPw2').value = '';
-}
-
-async function confirmChangePassword() {
-  var oldPw = document.getElementById('settingsOldPw').value;
-  var newPw = document.getElementById('settingsNewPw').value;
-  var newPw2 = document.getElementById('settingsNewPw2').value;
-  if (!oldPw) { showToast('请输入旧密码'); return; }
-  if (!newPw || newPw.length < 4) { showToast('新密码至少 4 位'); return; }
-  if (newPw !== newPw2) { showToast('两次新密码不一致'); return; }
-  var oldPh = await sha256(oldPw);
-  try {
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
-    var remote = await res.json();
-    if (remote.pwhash !== oldPh) { showToast('旧密码错误'); return; }
-    // 用旧密码解密 backup_key
-    var backupKey = null;
-    if (remote.encrypted_backup_key) {
-      backupKey = await aesDecrypt(remote.encrypted_backup_key, oldPh);
-    }
-    var tok = null;
-    if (remote.token_enc) {
-      try { tok = await aesDecrypt(remote.token_enc, oldPh); } catch(e) { /* 解密失败则跳过更新 token_enc */ }
-    }
-    var newPh = await sha256(newPw);
-    remote.pwhash = newPh;
-    if (backupKey) remote.encrypted_backup_key = await aesEncrypt(backupKey, newPh);
-    if (tok) remote.token_enc = await aesEncrypt(tok, newPh);
-    var contentB64 = _strToB64(JSON.stringify(remote));
-    // 需要 Token 做 PUT
-    var putToken = tok;
-    if (!putToken) { showToast('无法解密现有 Token，请先在 Token 管理中更新后再修改密码'); return; }
-    var sha = null;
-    try {
-      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + putToken, 'Accept': 'application/vnd.github+json' } });
-      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
-      else throw new Error('无法访问仓库 (' + getRes.status + ')');
-    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
-    var putBody = { message: 'change password', content: contentB64 };
-    if (sha) putBody.sha = sha;
-    var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT', headers: { 'Authorization': 'Bearer ' + putToken, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody)
-    });
-    if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
-    sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
-    if (remote.token_enc) sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
-    cancelChangePw();
-    showToast('密码已更新');
-  } catch(e) { showToast('密码修改失败: ' + (e.message || e)); }
-}
-
-// ═══ 注册码状态显示 ═══
-async function loadInviteCodeDisplay() {
-  var el = document.getElementById('settingsInviteCode');
-  if (!el) return;
-  el.value = '--';
-  try {
-    var ph = getSessionPwhash();
-    if (!ph) return;
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) return;
-    var remote = await res.json();
-    if (remote.invite_code_hash) {
-      el.value = '••••••••（已绑定）';
-    }
-  } catch(e) { /* 静默 */ }
-}
-
-// ═══ 注册码修改 ═══
-async function saveInviteCode() {
-  var newCode = document.getElementById('settingsInviteCode').value.trim();
-  if (!newCode) { showToast('请输入注册码'); return; }
-  var ph = getSessionPwhash();
-  if (!ph) { showToast('会话已过期，请重新登录'); return; }
-  try {
-    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
-    var remote = await res.json();
-    var tok = await aesDecrypt(remote.token_enc, ph);
-    // 验证新注册码在 invites.json 中
-    var newCodeHash = await sha256(newCode);
-    var invRes = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
-    if (!invRes.ok) throw new Error('无法获取邀请列表 (' + invRes.status + ')');
-    var invData = await invRes.json();
-    var invEntry = (invData.invites || {})[newCodeHash];
-    if (!invEntry) { showToast('注册码无效，未在 invites.json 中找到'); return; }
-    // 用旧密码解密 backup_key
-    var backupKey = null;
-    if (remote.encrypted_backup_key) {
-      backupKey = await aesDecrypt(remote.encrypted_backup_key, ph);
-    }
-    // 更新 invite_code_hash 和 recovery_encrypted_backup_key
-    remote.invite_code_hash = newCodeHash;
-    if (backupKey) remote.recovery_encrypted_backup_key = await aesEncrypt(backupKey, newCodeHash);
-    var contentB64 = _strToB64(JSON.stringify(remote));
-    var sha = null;
-    try {
-      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
-      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
-      else throw new Error('无法访问仓库 (' + getRes.status + ')');
-    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
-    var putBody = { message: 'update invite code', content: contentB64 };
-    if (sha) putBody.sha = sha;
-    var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody)
-    });
-    if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
-    document.getElementById('settingsInviteCode').value = '';
-    showToast('注册码已更新');
-  } catch(e) { showToast('注册码修改失败: ' + (e.message || e)); }
-}
-
-// ═══ 初始化 ═══
 (function initAuth() {
-  showLoginMode();
-  if (isRegistered()) { tryAutoLogin(); return; }
+  updateAuthForm();
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-password').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      var lBtn = document.getElementById('auth-login-btn');
-      var rBtn = document.getElementById('auth-recovery-btn');
-      if (lBtn && lBtn.style.display !== 'none') handleLogin();
-      else if (rBtn && rBtn.style.display !== 'none') handleRecovery();
-      else handleRegister();
-    }
+    if (e.key === 'Enter') { if (isRegistered()) handleLogin(); else handleRegister(); }
   });
-  document.getElementById('auth-invite-code').addEventListener('keydown', function(e) {
+  document.getElementById('auth-token').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') handleRegister();
-  });
-  document.getElementById('auth-new-password').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') handleRecovery();
   });
 })();
 // ====== 用户鉴权模块 end ======
@@ -2911,6 +2111,15 @@ function clearEditor() {
   if (typeof calYear !== 'undefined') renderCalendar(calYear, calMonth);
 }
 
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 // ====== Markdown 简易渲染 ======
 function renderMarkdown(text) {
   if (!text) return '';
@@ -2971,6 +2180,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 设备检测：PC / Phone
   (function detectDevice() {
     const ua = navigator.userAgent || '';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+    const tag = document.getElementById('deviceTag');
+    if (tag) {
+      tag.textContent = isMobile ? 'Phone' : 'PC';
+      tag.className = 'device-tag ' + (isMobile ? 'mobile' : 'desktop');
+    }
   })();
 
   switchLedgerType();
@@ -3312,7 +2527,7 @@ function drawHeatmap() {
 
 function showToast(msg) {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3000);
+  setTimeout(()=>t.classList.remove('show'),2000);
 }
 
 // ====== 合并备份数据（日记 + 账本） ======
@@ -3384,9 +2599,30 @@ function localSync() {
 // ====== GitHub 同步 ======
 // 直连 GitHub Contents API，token 从 localStorage 读取
 var GITHUB_REPO_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents';
+var GIT_TOKEN_KEY = 'daily-doc-git-token';
 
 function _getGitToken() {
   try { return localStorage.getItem(GIT_TOKEN_KEY) || ''; } catch(e) { return ''; }
+}
+
+function saveGitToken() {
+  var input = document.getElementById('gitTokenInput');
+  if (!input) return;
+  var v = input.value.trim();
+  try {
+    if (v) localStorage.setItem(GIT_TOKEN_KEY, v);
+    else localStorage.removeItem(GIT_TOKEN_KEY);
+  } catch(e) {}
+  // 防抖：用 setTimeout 聚合频繁触发（如 oninput），避免连续写入
+  if (saveGitToken._timer) clearTimeout(saveGitToken._timer);
+  saveGitToken._timer = setTimeout(function() {
+    saveGitToken._timer = null;
+    _checkGitSyncBtn();
+  }, 300);
+}
+
+function showGitTokenHelp() {
+  showToast('GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens，需 Contents: Read and Write');
 }
 
 function _canGitSync() {
@@ -3413,17 +2649,8 @@ function _gitFetchRemoteData(filename) {
     'Accept': 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28'
   };
-
-  var controller = new AbortController();
-  var timedOut = false;
-  var timer = setTimeout(function() {
-    timedOut = true;
-    controller.abort();
-  }, 30000);
-
-  return fetch(url, { method: 'GET', headers: headers, signal: controller.signal })
+  return fetch(url, { method: 'GET', headers: headers })
   .then(function(resp) {
-    clearTimeout(timer);
     if (resp.status === 404) return null;
     if (!resp.ok) {
       return resp.text().then(function(t) {
@@ -3434,12 +2661,6 @@ function _gitFetchRemoteData(filename) {
       try { return JSON.parse(_b64Decode(data.content)); }
       catch(e) { return null; }
     });
-  })
-  .catch(function(e) {
-    clearTimeout(timer);
-    var msg = timedOut ? '请求超时（30s）' : (e && e.name === 'AbortError' ? '请求已中止' : (e && e.message ? e.message : String(e || '未知错误')));
-    console.error('[GitFetch] ' + msg);
-    throw new Error(msg);
   });
 }
 
@@ -3487,17 +2708,9 @@ function _gitSyncFetch(body) {
     'X-GitHub-Api-Version': '2022-11-28'
   };
 
-  var controller = new AbortController();
-  var timedOut = false;
-  var timer = setTimeout(function() {
-    timedOut = true;
-    controller.abort();
-  }, 30000);
-
   // 先 GET 获取 sha（文件存在则需要）
-  return fetch(url, { method: 'GET', headers: headers, signal: controller.signal })
+  return fetch(url, { method: 'GET', headers: headers })
   .then(function(resp) {
-    clearTimeout(timer);
     var payload = {
       message: 'chore: backup ' + path + ' @ ' + new Date().toISOString(),
       content: _b64Encode(content),
@@ -3515,19 +2728,11 @@ function _gitSyncFetch(body) {
     });
   })
   .then(function(payload) {
-    // 为 PUT 阶段重置超时计时器
-    timer = setTimeout(function() {
-      timedOut = true;
-      controller.abort();
-    }, 30000);
-
     return fetch(url, {
       method: 'PUT',
       headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload),
-      signal: controller.signal
+      body: JSON.stringify(payload)
     }).then(function(putResp) {
-      clearTimeout(timer);
       if (!putResp.ok) {
         return putResp.text().then(function(t) {
           throw new Error('PUT ' + putResp.status + ': ' + t.slice(0, 120));
@@ -3535,27 +2740,105 @@ function _gitSyncFetch(body) {
       }
       return putResp.json();
     });
+  });
+}
+
+function gitSyncToGitHub() {
+  var btn = document.getElementById('gitSyncBtn');
+  if (!btn) return;
+  if (!_canGitSync()) { showToast('请先输入 GitHub Token'); return; }
+
+  // 先同步最新 entries → backup，确保累积时间等数据是最新的
+  try {
+    var freshEntries = loadEntries();
+    var monthPrefix = _backupMonthKey();
+    var backup = _loadBackup();
+    Object.keys(freshEntries).forEach(function(d) {
+      if (d && d.indexOf(monthPrefix) === 0 && freshEntries[d]) {
+        backup.entries[d] = freshEntries[d];
+      }
+    });
+    // ledger 也刷新当天数据
+    var allLedger = getLedgerData();
+    var todayLedger = allLedger.filter(function(t) { return t.date === currentDate; });
+    backup.ledger = backup.ledger.filter(function(t) { return t.date !== currentDate; });
+    backup.ledger = backup.ledger.concat(todayLedger);
+    backup._updatedAt = new Date().toISOString();
+    _saveBackup(backup);
+  } catch(e) {}
+
+  var key = _backupStorageKey();
+  var localData = _loadBackup();
+  if (!localData || !localData.entries || Object.keys(localData.entries).length === 0) {
+    showToast('暂无当月备份数据'); return;
+  }
+
+  // 进入同步中状态
+  btn.classList.add('syncing');
+  btn.classList.remove('synced', 'sync-error');
+  btn.textContent = '同步中...';
+  btn.disabled = true;
+
+  var monthKey = _backupMonthKey();
+  var filename = 'backup-' + monthKey + '.json';
+
+  // 先拉取远程已有备份，与本地按日期深度合并后再推送，避免覆盖历史数据。
+  // 远程不存在(404)时 remoteData 为 null，_deepMergeBackup 会退化为仅用本地数据。
+  _gitFetchRemoteData(filename)
+  .then(function(remoteData) {
+    var merged = _deepMergeBackup(remoteData, localData);
+    // 合并结果回写本地，使本地也成为全量，避免下次再被局部数据覆盖
+    try { localStorage.setItem(key, JSON.stringify(merged)); } catch(e) {}
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
+  })
+  .then(function() {
+    btn.classList.remove('syncing');
+    btn.classList.add('synced');
+    btn.textContent = '已同步 \u2713';
+    setTimeout(function() {
+      btn.classList.remove('synced');
+      btn.textContent = '本月备份同步';
+      btn.disabled = false;
+      _checkGitSyncBtn();
+    }, 2000);
   })
   .catch(function(e) {
-    clearTimeout(timer);
-    var msg = timedOut ? '请求超时（30s）' : (e && e.name === 'AbortError' ? '请求已中止' : (e && e.message ? e.message : String(e || '未知错误')));
-    console.error('[GitSync] ' + msg);
-    throw new Error(msg);
+    btn.classList.remove('syncing');
+    btn.classList.add('sync-error');
+    btn.textContent = '同步失败';
+    showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
+    setTimeout(function() {
+      btn.classList.remove('sync-error');
+      btn.textContent = '本月备份同步';
+      btn.disabled = false;
+      _checkGitSyncBtn();
+    }, 2000);
   });
 }
 
 function _checkGitSyncBtn() {
+  // 始终从 localStorage 回填 token，确保输入框与存储同步
+  var tokenInput = document.getElementById('gitTokenInput');
+  if (tokenInput) {
+    var saved = _getGitToken();
+    if (saved && tokenInput.value !== saved) tokenInput.value = saved;
+    else if (!saved && tokenInput.value) tokenInput.value = '';
+  }
+
   var gitBtn = document.getElementById('gitSyncBtn');
   var fullBtn = document.getElementById('fullBackupBtn');
 
-  // 完整备份按钮：需 Token 才能同步到 GitHub
+  // 未配置 Token：禁用所有同步按钮
   if (!_canGitSync()) {
-    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请先登录以获取 Token'; }
-  } else {
-    if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
+    if (gitBtn) { gitBtn.disabled = true; gitBtn.title = '请在上方输入 GitHub Token'; }
+    if (fullBtn) { fullBtn.disabled = true; fullBtn.title = '请在上方输入 GitHub Token'; }
+    return;
   }
 
-  // 本月备份按钮：本地导出，无需 Token；检查当月数据
+  // 完整备份按钮：始终可用
+  if (fullBtn) { fullBtn.disabled = false; fullBtn.title = ''; }
+
+  // 本月备份按钮：检查当月数据
   if (gitBtn) {
     var key = _backupStorageKey();
     var hasData = false;
@@ -3708,45 +2991,6 @@ function fetchHuangli(dateStr, silent) {
   return p;
 }
 
-/* ====== 月柱本地计算（年上起月法） ====== */
-const TIAN_GAN = '甲乙丙丁戊己庚辛壬癸';
-const DI_ZHI = '子丑寅卯辰巳午未申酉戌亥';
-
-/* 根据公历月日确定节月序数（1=寅月, 2=卯月, ..., 12=丑月）
-   基于十二节近似日期：立春2/4 惊蛰3/6 清明4/5 立夏5/6 芒种6/6
-   小暑7/7 立秋8/8 白露9/8 寒露10/8 立冬11/7 大雪12/7 小寒1/6 */
-function getJieMonthOrder(solarMonth, solarDay) {
-  const jie = [
-    null,
-    { d: 6,  o: 12 }, // 1月 小寒→丑月
-    { d: 4,  o: 1  }, // 2月 立春→寅月
-    { d: 6,  o: 2  }, // 3月 惊蛰→卯月
-    { d: 5,  o: 3  }, // 4月 清明→辰月
-    { d: 6,  o: 4  }, // 5月 立夏→巳月
-    { d: 6,  o: 5  }, // 6月 芒种→午月
-    { d: 7,  o: 6  }, // 7月 小暑→未月
-    { d: 8,  o: 7  }, // 8月 立秋→申月
-    { d: 8,  o: 8  }, // 9月 白露→酉月
-    { d: 8,  o: 9  }, // 10月 寒露→戌月
-    { d: 7,  o: 10 }, // 11月 立冬→亥月
-    { d: 7,  o: 11 }  // 12月 大雪→子月
-  ];
-  var m = solarMonth, d = solarDay;
-  if (d >= jie[m].d) return jie[m].o;
-  var pm = m === 1 ? 12 : m - 1;
-  return jie[pm].o;
-}
-
-/* 年上起月：年干 + 节月序数 → 月柱干支 */
-function computeMonthGanzhi(yearGanzhi, jieMonthOrder) {
-  var yearStemIdx = TIAN_GAN.indexOf(yearGanzhi[0]);
-  // 甲己→丙 乙庚→戊 丙辛→庚 丁壬→壬 戊癸→甲
-  var month1Stem = [2, 4, 6, 8, 0][yearStemIdx % 5];
-  var stemIdx = (month1Stem + jieMonthOrder - 1) % 10;
-  var branchIdx = (2 + jieMonthOrder - 1) % 12;
-  return TIAN_GAN[stemIdx] + DI_ZHI[branchIdx];
-}
-
 /* 静默预加载前后 N 天的黄历数据 */
 function prefetchAdjacent(dateStr, n) {
   n = n || 1;
@@ -3792,8 +3036,6 @@ function renderHuangli(dateStr) {
 
     /* 干支 */
     document.getElementById('hlYearGz').textContent = l.year_ganzhi;
-    var jieMo = getJieMonthOrder(s.month, s.day);
-    l.month_ganzhi = computeMonthGanzhi(l.year_ganzhi, jieMo);
     document.getElementById('hlMonthGz').textContent = l.month_ganzhi;
     document.getElementById('hlDayGz').textContent = l.day_ganzhi;
     document.getElementById('hlWx').textContent = a.wuxing || '--';
@@ -4359,7 +3601,6 @@ var zengQuotes = [
 showDailyQuote();
 function hashCode(s) {let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
 function getDailyQuote() {
-  if (!Array.isArray(zengQuotes) || !zengQuotes.length) return '';
   const key = 'daily-quote-' + currentDate;
   try {
     let cached = localStorage.getItem(key); if (cached) return cached;
@@ -4374,10 +3615,7 @@ function getDailyQuote() {
 }
 function showDailyQuote() {
   const el = document.getElementById('dailyQuote');
-  if (!el) return;
-  try { var quote = getDailyQuote(); } catch(e) { quote = ''; }
-  if (quote) el.textContent = '「' + quote + '」—— 曾仕强';
-  else el.textContent = '';
+  if (el) el.textContent = '「' + getDailyQuote() + '」—— 曾仕强';
 }
 function setMood(val) {
   currentMood = val;
@@ -5039,125 +4277,32 @@ function initBudgetInput() {
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-/* ═══════════════════ 年度备份 ═══════════════════ */
+/* ═══════════════════ 完整备份 ═══════════════════ */
 function exportFullBackup() {
-  if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
+  if (!_canGitSync()) { showToast('请先输入 GitHub Token'); return; }
 
   var btn = document.getElementById('fullBackupBtn');
   if (!btn) return;
 
-  var year = String(new Date().getFullYear());
-  var yearPrefix = year + '-';
-
-  // 收集当年数据：筛选 YYYY-MM-DD 格式中当年开头的 entries + 当年日期的 ledger
-  var allEntries = loadEntries();
-  var allLedger = getLedgerData();
-  var localEntries = {};
-  Object.keys(allEntries || {}).forEach(function(k) {
-    if (k.indexOf(yearPrefix) === 0) localEntries[k] = allEntries[k];
-  });
-  var localLedger = (allLedger || []).filter(function(t) {
-    return t && t.date && t.date.indexOf(yearPrefix) === 0;
-  });
-  var localData = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    entries: localEntries,
-    ledger: localLedger
-  };
+  var entries = loadEntries();
+  var ledger = getLedgerData();
+  var localData = { version: 1, exportedAt: new Date().toISOString(), entries: entries, ledger: ledger };
+  var filename = 'backup-' + new Date().getFullYear() + '.json';
 
   btn.classList.add('syncing');
   btn.classList.remove('synced', 'sync-error');
   btn.textContent = '同步中...';
   btn.disabled = true;
 
-  var filename = 'backup-' + year + '.json';
-  var snapshotKey = 'backup_' + year + '_snapshot';
-
-  _gitFetchRemoteData(filename)
-  .then(function(remoteData) {
-    // 双向合并 + 快照删除检测
-    remoteData = remoteData || { entries: {}, ledger: [] };
-    var rEntries = remoteData.entries || {};
-    var lEntries = localData.entries || {};
-    var rLedger = Array.isArray(remoteData.ledger) ? remoteData.ledger : [];
-    var lLedger = Array.isArray(localData.ledger) ? localData.ledger : [];
-
-    // 读取上次同步快照
-    var snapshot = {};
-    try { snapshot = JSON.parse(localStorage.getItem(snapshotKey) || '{}'); } catch(e) {}
-    var snapEntries = snapshot.entries || {};
-    var snapLedger = Array.isArray(snapshot.ledger) ? snapshot.ledger : [];
-
-    // entries: 远程全部保留，本地覆盖（冲突本地优先）
-    var mergedEntries = {};
-    Object.keys(rEntries).forEach(function(k) { mergedEntries[k] = rEntries[k]; });
-    Object.keys(lEntries).forEach(function(k) { mergedEntries[k] = lEntries[k]; });
-
-    // 删除检测：snapshot 有但 local 无 → 本地主动删除 → 从 merged 移除
-    Object.keys(snapEntries).forEach(function(k) {
-      if (!(k in lEntries)) delete mergedEntries[k];
-    });
-
-    // ledger: 本地涉及的日期以本地为准，其余保留远程
-    var localDates = {};
-    lLedger.forEach(function(t) { if (t && t.date) localDates[t.date] = true; });
-    var mergedLedger = rLedger.filter(function(t) { return !t || !t.date || !localDates[t.date]; });
-    lLedger.forEach(function(t) { mergedLedger.push(t); });
-
-    // ledger 删除检测
-    var snapDates = {};
-    snapLedger.forEach(function(t) { if (t && t.date) snapDates[t.date] = true; });
-    mergedLedger = mergedLedger.filter(function(t) {
-      if (!t || !t.date) return true;
-      if (snapDates[t.date] && !localDates[t.date]) return false;
-      return true;
-    });
-
-    var mergedData = {
-      version: localData.version || 1,
-      exportedAt: new Date().toISOString(),
-      entries: mergedEntries,
-      ledger: mergedLedger
-    };
-
-    // 排除 exportedAt 时间戳后比对
-    function _stripTs(o) {
-      var c = JSON.parse(JSON.stringify(o || {}));
-      delete c.exportedAt;
-      return c;
-    }
-    if (JSON.stringify(_stripTs(remoteData)) === JSON.stringify(_stripTs(mergedData))) {
-      btn.classList.remove('syncing');
-      btn.classList.add('synced');
-      btn.textContent = '已是最新 \u2713';
-      showToast('数据已是最新，无需同步');
-      setTimeout(function() {
-        btn.classList.remove('synced');
-        btn.textContent = '年度备份同步';
-        btn.disabled = false;
-        _checkGitSyncBtn();
-      }, 2000);
-      return;
-    }
-
-    // 有差异，推送合并结果
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
-      .then(function() {
-        try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}
-        return 'synced';
-      });
-  })
-  .then(function(result) {
-    if (result !== 'synced') return;
-
+  // 年度完整备份以本地为权威，直接覆盖远程，确保删除操作能同步
+  _gitSyncFetch({ filename: filename, content: JSON.stringify(localData, null, 2) })
+  .then(function() {
     btn.classList.remove('syncing');
     btn.classList.add('synced');
     btn.textContent = '已同步 \u2713';
-    showToast('年度备份已同步: ' + filename);
     setTimeout(function() {
       btn.classList.remove('synced');
-      btn.textContent = '年度备份同步';
+      btn.textContent = '完整备份同步';
       btn.disabled = false;
       _checkGitSyncBtn();
     }, 2000);
@@ -5169,156 +4314,23 @@ function exportFullBackup() {
     showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
     setTimeout(function() {
       btn.classList.remove('sync-error');
-      btn.textContent = '年度备份同步';
+      btn.textContent = '完整备份同步';
       btn.disabled = false;
       _checkGitSyncBtn();
     }, 2000);
   });
 }
 
-/* 本月备份：同步当月数据到 GitHub → backup-YYYY-MM.json */
+/* 月度归档：导出上月 + 历史全量数据 → backup-YYYY.json */
 function exportMonthlyArchive() {
-  if (!_canGitSync()) { showToast('请先登录以获取 Token'); return; }
-
-  var btn = document.getElementById('gitSyncBtn');
-  if (!btn) return;
-
-  // 先同步最新 entries → backup，确保累积时间等数据是最新的
-  try {
-    var freshEntries = loadEntries();
-    var monthPrefix = _backupMonthKey();
-    var backup = _loadBackup();
-    Object.keys(freshEntries).forEach(function(d) {
-      if (d && d.indexOf(monthPrefix) === 0 && freshEntries[d]) {
-        backup.entries[d] = freshEntries[d];
-      }
-    });
-    var allLedger = getLedgerData();
-    var todayLedger = allLedger.filter(function(t) { return t.date === currentDate; });
-    backup.ledger = backup.ledger.filter(function(t) { return t.date !== currentDate; });
-    backup.ledger = backup.ledger.concat(todayLedger);
-    backup._updatedAt = new Date().toISOString();
-    _saveBackup(backup);
-  } catch(e) {}
-
-  var key = _backupStorageKey();
-  var localData = _loadBackup();
-  if (!localData || !localData.entries || Object.keys(localData.entries).length === 0) {
-    showToast('暂无当月备份数据'); return;
-  }
-
-  btn.classList.add('syncing');
-  btn.classList.remove('synced', 'sync-error');
-  btn.textContent = '同步中...';
-  btn.disabled = true;
-
-  var monthKey = _backupMonthKey();
-  var filename = 'backup-' + monthKey + '.json';
-
-  _gitFetchRemoteData(filename)
-  .then(function(remoteData) {
-    // 双向合并 + 快照删除检测
-    remoteData = remoteData || { entries: {}, ledger: [] };
-    var rEntries = remoteData.entries || {};
-    var lEntries = localData.entries || {};
-    var rLedger = Array.isArray(remoteData.ledger) ? remoteData.ledger : [];
-    var lLedger = Array.isArray(localData.ledger) ? localData.ledger : [];
-
-    // 读取上次同步快照，用于判断"本地删除"vs"远程新增"
-    var snapshotKey = key + '_snapshot';
-    var snapshot = {};
-    try { snapshot = JSON.parse(localStorage.getItem(snapshotKey) || '{}'); } catch(e) {}
-    var snapEntries = snapshot.entries || {};
-    var snapLedger = Array.isArray(snapshot.ledger) ? snapshot.ledger : [];
-
-    // entries: 先保留远程所有，本地覆盖（新增 + 修改），远程独有保留
-    var mergedEntries = {};
-    Object.keys(rEntries).forEach(function(k) { mergedEntries[k] = rEntries[k]; });
-    Object.keys(lEntries).forEach(function(k) { mergedEntries[k] = lEntries[k]; });
-
-    // 删除检测：snapshot 中有但 local 没有 → 本地主动删除了 → 从 merged 移除
-    Object.keys(snapEntries).forEach(function(k) {
-      if (!(k in lEntries)) delete mergedEntries[k];
-    });
-
-    // ledger: 本地涉及的日期以本地为准，其余保留远程
-    var localDates = {};
-    lLedger.forEach(function(t) { if (t && t.date) localDates[t.date] = true; });
-    var mergedLedger = rLedger.filter(function(t) { return !t || !t.date || !localDates[t.date]; });
-    lLedger.forEach(function(t) { mergedLedger.push(t); });
-
-    // ledger 删除检测：snapshot 日期存在但 local 中不存在 → 本地删除
-    var snapDates = {};
-    snapLedger.forEach(function(t) { if (t && t.date) snapDates[t.date] = true; });
-    mergedLedger = mergedLedger.filter(function(t) {
-      if (!t || !t.date) return true;
-      if (snapDates[t.date] && !localDates[t.date]) return false;
-      return true;
-    });
-
-    var mergedData = {
-      version: localData.version || 1,
-      exportedAt: new Date().toISOString(),
-      entries: mergedEntries,
-      ledger: mergedLedger
-    };
-
-    // 比对合并结果与远程原始数据（排除 exportedAt 时间戳，避免每次都误判为"有差异"）
-    function _stripTs(o) {
-      var c = JSON.parse(JSON.stringify(o || {}));
-      delete c.exportedAt;
-      return c;
-    }
-    if (JSON.stringify(_stripTs(remoteData)) === JSON.stringify(_stripTs(mergedData))) {
-      btn.classList.remove('syncing');
-      btn.classList.add('synced');
-      btn.textContent = '已是最新 \u2713';
-      showToast('数据已是最新，无需同步');
-      setTimeout(function() {
-        btn.classList.remove('synced');
-        btn.textContent = '本月备份同步';
-        btn.disabled = false;
-        _checkGitSyncBtn();
-      }, 2000);
-      return;
-    }
-
-    // 有差异，推送合并结果；成功后回写本地 + 更新快照
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
-      .then(function() {
-        try { localStorage.setItem(key, JSON.stringify(mergedData)); } catch(e) {}
-        try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}
-        return 'synced';  // 向下游传递成功标识，区分"跳过同步"的 undefined
-      });
-  })
-  .then(function(result) {
-    // result: undefined = 数据无需同步（已在 step2 内部恢复按钮）
-    //         'synced' = PUT 成功，需要更新按钮状态
-    if (result !== 'synced') return;
-
-    btn.classList.remove('syncing');
-    btn.classList.add('synced');
-    btn.textContent = '已同步 \u2713';
-    showToast('本月备份已同步: ' + filename);
-    setTimeout(function() {
-      btn.classList.remove('synced');
-      btn.textContent = '本月备份同步';
-      btn.disabled = false;
-      _checkGitSyncBtn();
-    }, 2000);
-  })
-  .catch(function(e) {
-    btn.classList.remove('syncing');
-    btn.classList.add('sync-error');
-    btn.textContent = '同步失败';
-    showToast('同步失败: ' + (e && e.message ? e.message : (e || '未知错误')));
-    setTimeout(function() {
-      btn.classList.remove('sync-error');
-      btn.textContent = '本月备份同步';
-      btn.disabled = false;
-      _checkGitSyncBtn();
-    }, 2000);
-  });
+  var now = new Date();
+  var prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var y = prev.getFullYear();
+  var entries = loadEntries();
+  var ledger = getLedgerData();
+  var backup = { version: 1, exportedAt: now.toISOString(), month: y + '-' + String(prev.getMonth() + 1).padStart(2, '0'), entries, ledger };
+  downloadFile(JSON.stringify(backup, null, 2), 'backup-' + y + '.json', 'application/json;charset=utf-8');
+  showToast('月度归档已导出: backup-' + y + '.json');
 }
 
 /* ── 定时备份 ── */

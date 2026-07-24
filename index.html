@@ -238,9 +238,8 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .tag-chip { background: var(--c-bg-light); color: var(--c-text-mid); border: 2px solid transparent; padding: 6px 10px 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; user-select: none; display: inline-flex; align-items: center; gap: 4px; }
 .tag-chip:hover { background: var(--c-bg); border-color: var(--c-light); }
 .tag-chip.selected { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; border-color: var(--c-primary); }
-.tag-chip-delete { display: none; width: 16px; height: 16px; line-height: 14px; text-align: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: #999; background: transparent; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.tag-chip-delete { display: inline-block; width: 16px; height: 16px; line-height: 14px; text-align: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: #999; background: transparent; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
 .tag-chip-delete:hover { color: #fff; background: #e74c3c; }
-.tag-chip:hover .tag-chip-delete { display: inline-block; }
 .tag-chip.selected .tag-chip-delete { color: rgba(255,255,255,0.6); }
 .tag-chip.selected .tag-chip-delete:hover { color: #fff; background: rgba(255,255,255,0.25); }
 .tag-chip-add { background: none; border: 2px dashed var(--c-bg-mid); color: var(--c-light); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; }

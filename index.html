@@ -505,12 +505,10 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .settings-header h3 { font-size: 16px; }
   .settings-close { font-size: 20px; }
   .token-display-row { gap: 4px; }
-  .token-eye-btn { padding: 6px 6px; }
   .token-copy-btn { padding: 6px 6px; font-size: 11px; }
   .btn-settings-inline { padding: 6px 8px; font-size: 11px; }
-  #tokenEditRow { flex-wrap: wrap !important; gap: 6px; }
-  #tokenEditRow .token-edit { flex: 1 1 100%; min-width: 0; }
-  #tokenEditRow button { flex: 1 1 auto; }
+  #tokenEditRow { flex-direction: column !important; align-items: stretch !important; }
+  #tokenEditRow > .pw-wrapper { flex: 1 1 100% !important; }
 }
 
 /* ── 超小屏适配 (≤400px) ── */
@@ -527,7 +525,6 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .settings-field-row input { flex: 1 1 100%; min-height: 44px; }
   .settings-field-row button { flex: 1 1 auto; min-height: 44px; }
   .token-display-row { gap: 3px; }
-  .token-eye-btn { padding: 5px 5px; min-height: 36px; min-width: 36px; }
   .token-copy-btn { padding: 5px 6px; font-size: 11px; }
   .btn-settings-inline { padding: 5px 7px; font-size: 11px; }
   .settings-field input[type="text"],
@@ -834,12 +831,6 @@ body.focus-mode .month-summary { display: none !important; }
   outline: none; font-family: monospace; letter-spacing: 1px;
   box-sizing: border-box; min-width: 0;
 }
-.token-eye-btn {
-  background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
-  padding: 6px 8px; cursor: pointer; font-size: 14px; color: var(--c-text-mid);
-  transition: all 0.2s; flex-shrink: 0;
-}
-.token-eye-btn:hover { background: var(--c-bg-mid); color: var(--c-text); }
 .token-edit {
   flex: 1; padding: 8px 12px; border: 1.5px solid var(--c-primary); border-radius: 10px;
   font-size: 13px; background: var(--c-bg); color: var(--c-text);
@@ -958,9 +949,8 @@ body.focus-mode .month-summary { display: none !important; }
 .token-copy-btn.copied { background: #4caf50; border-color: #4caf50; color: #fff; }
 .token-copy-btn:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
 /* Token 编辑行防换行 */
-#tokenEditRow { flex-wrap: nowrap !important; }
-#tokenEditRow .token-edit { flex: 1 1 auto; min-width: 0; }
-#tokenEditRow button { flex-shrink: 0; }
+#tokenEditRow { gap: 8px; align-items: flex-start; }
+#tokenEditRow > .pw-wrapper { flex: 1; min-width: 200px; }
 
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1060,16 +1050,27 @@ body.focus-mode .month-summary { display: none !important; }
       <div class="settings-field" style="margin-top:12px;">
         <label>Token</label>
         <div class="token-display-row">
-          <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
-          <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <div class="pw-wrapper" style="flex:1;">
+            <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
+            <button class="pw-toggle" onclick="toggleTokenVisibility()" title="显示/隐藏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
           <button class="token-copy-btn" id="tokenCopyBtn" onclick="copyToken()" title="复制 Token">复制</button>
           <button class="btn-settings-inline" id="tokenEditBtn" onclick="editToken()">编辑</button>
         </div>
       </div>
       <div class="export-row" id="tokenEditRow" style="display:none;margin-top:8px;">
-        <input type="text" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
-        <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()">保存</button>
-        <button class="btn-settings-secondary" id="tokenCancelBtn" onclick="cancelEditToken()">取消</button>
+        <div class="pw-wrapper" style="flex:1;">
+          <input type="password" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
+          <button class="pw-toggle" onclick="togglePwVisibility('tokenEditInput')" title="显示/隐藏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <div class="pw-wrapper" style="flex:1;">
+          <input type="password" id="tokenEditInput2" class="token-edit" placeholder="确认新 Token">
+          <button class="pw-toggle" onclick="togglePwVisibility('tokenEditInput2')" title="显示/隐藏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <div class="settings-field-row" style="flex-basis:100%;margin-top:8px;">
+          <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()">保存</button>
+          <button class="btn-settings-secondary" id="tokenCancelBtn" onclick="cancelEditToken()">取消</button>
+        </div>
       </div>
     </div>
 
@@ -1704,7 +1705,7 @@ async function loadTokenDisplay() {
 
 function toggleTokenVisibility() {
   var inp = document.getElementById('tokenDisplayInput');
-  var btn = document.getElementById('tokenEyeBtn');
+  var btn = inp.parentElement.querySelector('.pw-toggle');
   if (!inp) return;
   _tokenDisplayVisible = !_tokenDisplayVisible;
   if (_tokenDisplayVisible) {
@@ -1737,19 +1738,23 @@ function copyToken() {
 function editToken() {
   document.getElementById('tokenEditRow').style.display = '';
   document.getElementById('tokenEditInput').value = _cachedTokenPlain || '';
+  document.getElementById('tokenEditInput2').value = '';
   document.getElementById('tokenEditBtn').style.display = 'none';
 }
 
 function cancelEditToken() {
   document.getElementById('tokenEditRow').style.display = 'none';
   document.getElementById('tokenEditInput').value = '';
+  document.getElementById('tokenEditInput2').value = '';
   document.getElementById('tokenEditBtn').style.display = '';
 }
 
 async function saveToken() {
   var newTok = document.getElementById('tokenEditInput').value.trim();
+  var newTok2 = document.getElementById('tokenEditInput2').value.trim();
   if (!newTok) { showToast('请输入 Token'); return; }
   if (!/^(ghp_|github_pat_)/.test(newTok)) { showToast('Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'); return; }
+  if (newTok !== newTok2) { showToast('两次输入的 Token 不一致'); return; }
   var ph = getSessionPwhash();
   if (!ph) { showToast('会话已过期，请重新登录'); return; }
   var btnSave = document.getElementById('tokenSaveBtn');

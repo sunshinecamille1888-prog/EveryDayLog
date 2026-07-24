@@ -3451,14 +3451,17 @@ function localSync() {
   if (m) { m.className = 'sync-btn-mobile syncing'; }
   var parts = currentDate.split('-');
   var fname = 'backup-' + parts[0] + '-' + parts[1] + '.json';
-  fetch(fname)
-    .then(function(resp) {
+
+  // 优先通过 GitHub API 直取（0 延迟），无 token 时降级为 Pages 相对 URL
+  function _fetchBackup() {
+    if (_canGitSync()) return _gitFetchRemoteData(fname);
+    return fetch(fname).then(function(resp) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       return resp.text();
-    })
-    .then(function(raw) {
-      return _tryDecryptBackup(raw);
-    })
+    }).then(function(raw) { return _tryDecryptBackup(raw); });
+  }
+
+  _fetchBackup()
     .then(function(backup) {
       if (!backup) throw new Error('解析失败');
       var r = mergeBackupData(backup);
@@ -3471,11 +3474,12 @@ function localSync() {
       showToast(msg);
       _triggerGitAction();
     })
-    .catch(function() {
+    .catch(function(e) {
       d.className = 'sync-dot error';
       d.setAttribute('data-tip', '同步失败 · 点击重试');
       if (m) { m.className = 'sync-btn-mobile error'; }
-      showToast('未找到 ' + fname);
+      var errMsg = e && e.message ? e.message : (String(e) || '未知错误');
+      showToast('导入失败: ' + errMsg);
       setTimeout(function() {
         d.className = 'sync-dot idle';
         d.setAttribute('data-tip', '点击导入备份');

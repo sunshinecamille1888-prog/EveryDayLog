@@ -678,6 +678,23 @@ body.focus-mode .huangli-panel { display: none !important; }
 /* ── 专注模式隐藏 ── */
 body.focus-mode .month-summary { display: none !important; }
 
+/* ── 专注项目分布环形图 ── */
+.tag-dist-container { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.tag-dist-chart-wrap { width: 100%; max-width: 400px; display: flex; justify-content: center; }
+#tagDistCanvas { display: block; max-width: 100%; height: auto; }
+.tag-dist-empty { display: none; text-align: center; padding: 40px 20px; color: var(--c-light); font-size: 14px; }
+.tag-dist-legend { width: 100%; max-width: 360px; margin-top: 16px; }
+.td-legend-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; border-bottom: 1px solid var(--c-bg); }
+.td-legend-item:last-child { border-bottom: none; }
+.td-legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.td-legend-label { flex: 1; color: var(--c-text); font-weight: 600; }
+.td-legend-pct { color: var(--c-text-mid); font-weight: 600; width: 40px; text-align: right; }
+.td-legend-dur { color: var(--c-light); width: 60px; text-align: right; font-size: 12px; }
+body.theme-dark .td-legend-item { border-bottom-color: #3a3028; }
+body.theme-dark .td-legend-label { color: #e8dcc8; }
+body.theme-dark .td-legend-dur { color: #888; }
+body.theme-dark .tag-dist-empty { color: #888; }
+
 </style>
 </head>
 <body>
@@ -914,6 +931,7 @@ body.focus-mode .month-summary { display: none !important; }
           <button class="st-tab active" onclick="switchStatsTab('week')">周柱状图</button>
           <button class="st-tab" onclick="switchStatsTab('month')">月柱状图</button>
           <button class="st-tab" onclick="switchStatsTab('heatmap')">时段热力图</button>
+          <button class="st-tab" onclick="switchStatsTab('tagDist')">专注项目分布</button>
           <button class="st-tab" onclick="switchStatsTab('mood')">心情曲线</button>
           <button class="st-tab" onclick="switchStatsTab('ledgerTrend')">支出趋势</button>
         </div>
@@ -925,6 +943,13 @@ body.focus-mode .month-summary { display: none !important; }
           <div class="heatmap-legend">
             <span>少</span><span class="hl-box hl-1"></span><span class="hl-box hl-2"></span><span class="hl-box hl-3"></span><span class="hl-box hl-4"></span><span class="hl-box hl-5"></span><span>多</span>
           </div>
+        </div>
+        <div class="tag-dist-container" id="tagDistContainer" style="display:none;">
+          <div class="tag-dist-chart-wrap">
+            <canvas id="tagDistCanvas" width="400" height="400"></canvas>
+          </div>
+          <div class="tag-dist-empty" id="tagDistEmpty">暂无专注数据</div>
+          <div class="tag-dist-legend" id="tagDistLegend"></div>
         </div>
       </div>
       <div class="trend-cards" id="trendCards" style="display:none;"></div>
@@ -1944,16 +1969,18 @@ let currentStatsTab = 'week';
 function switchStatsTab(tab) {
   currentStatsTab = tab;
   document.querySelectorAll('.st-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.st-tab').forEach(b => { if (b.textContent.includes({week:'周',month:'月',heatmap:'热',mood:'心情',ledgerTrend:'支出'}[tab])) b.classList.add('active'); });
+  document.querySelectorAll('.st-tab').forEach(b => { if (b.textContent.includes({week:'周',month:'月',heatmap:'热',tagDist:'分布',mood:'心情',ledgerTrend:'支出'}[tab])) b.classList.add('active'); });
 
   const useCanvas = tab === 'week' || tab === 'month' || tab === 'mood' || tab === 'ledgerTrend';
   document.getElementById('statsCanvas').style.display = useCanvas ? '' : 'none';
-  document.getElementById('heatmapContainer').style.display = useCanvas ? 'none' : '';
+  document.getElementById('heatmapContainer').style.display = (tab === 'heatmap') ? '' : 'none';
+  document.getElementById('tagDistContainer').style.display = (tab === 'tagDist') ? '' : 'none';
   document.getElementById('trendCards').style.display = tab === 'ledgerTrend' ? '' : 'none';
 
   if (tab === 'week') drawWeekChart();
   else if (tab === 'month') drawMonthChart();
   else if (tab === 'heatmap') drawHeatmap();
+  else if (tab === 'tagDist') drawTagDistribution();
   else if (tab === 'mood') drawMoodChart();
   else if (tab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
 }
@@ -2133,6 +2160,100 @@ function drawHeatmap() {
       }
       grid.appendChild(cell);
     }
+  });
+}
+
+function drawTagDistribution() {
+  const canvas = document.getElementById('tagDistCanvas');
+  const legend = document.getElementById('tagDistLegend');
+  const emptyEl = document.getElementById('tagDistEmpty');
+  if (!canvas || !legend) return;
+
+  const entries = loadEntries();
+  const tagTotals = {};
+  Object.values(entries).forEach(function(entry) {
+    if (entry.tagDurations) {
+      Object.keys(entry.tagDurations).forEach(function(tag) {
+        tagTotals[tag] = (tagTotals[tag] || 0) + entry.tagDurations[tag];
+      });
+    }
+  });
+
+  var tags = Object.keys(tagTotals).map(function(tag) { return { tag: tag, secs: tagTotals[tag] }; });
+  tags.sort(function(a, b) { return b.secs - a.secs; });
+  var totalSecs = tags.reduce(function(sum, t) { return sum + t.secs; }, 0);
+
+  if (tags.length === 0 || totalSecs === 0) {
+    emptyEl.style.display = 'block';
+    canvas.style.display = 'none';
+    legend.innerHTML = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  canvas.style.display = '';
+
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var cx = W / 2, cy = H / 2;
+  var outerR = Math.min(cx, cy) * 0.7;
+  var innerR = Math.min(cx, cy) * 0.4;
+
+  ctx.clearRect(0, 0, W, H);
+
+  var colors = ['#6BC9D3', '#D4DE6B', '#F4A261', '#E76F51', '#9B5DE5', '#00B4D8', '#F9A8D4', '#A78BFA', '#34D399', '#FB923C'];
+
+  var startAngle = -Math.PI / 2;
+
+  tags.forEach(function(item, i) {
+    var pct = item.secs / totalSecs;
+    var sweep = pct * 2 * Math.PI;
+    var endAngle = startAngle + sweep;
+    var midAngle = startAngle + sweep / 2;
+
+    // Draw sector
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, startAngle, endAngle);
+    ctx.arc(cx, cy, innerR, endAngle, startAngle, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+
+    // Percentage text at sector center
+    var pctText = Math.round(pct * 100) + '%';
+    if (pct >= 0.04) {
+      var textR = innerR + (outerR - innerR) * 0.55;
+      var tx = cx + Math.cos(midAngle) * textR;
+      var ty = cy + Math.sin(midAngle) * textR;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 15px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pctText, tx, ty);
+    }
+
+    startAngle = endAngle;
+  });
+
+  // Draw legend
+  legend.innerHTML = '';
+  tags.forEach(function(item, i) {
+    var pct = Math.round(item.secs / totalSecs * 100);
+    var m = Math.floor(item.secs / 60);
+    var durStr;
+    if (m >= 60) {
+      var h = Math.floor(m / 60);
+      durStr = h + '时' + (m % 60 > 0 ? m % 60 + '分' : '');
+    } else {
+      durStr = m + '分';
+    }
+    var div = document.createElement('div');
+    div.className = 'td-legend-item';
+    div.innerHTML = '<span class="td-legend-dot" style="background:' + colors[i % colors.length] + '"></span>' +
+      '<span class="td-legend-label">' + item.tag + '</span>' +
+      '<span class="td-legend-pct">' + pct + '%</span>' +
+      '<span class="td-legend-dur">' + durStr + '</span>';
+    legend.appendChild(div);
   });
 }
 

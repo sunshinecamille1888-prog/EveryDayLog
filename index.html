@@ -4408,23 +4408,44 @@ function exportMonthlyArchive() {
 
   _gitFetchRemoteData(filename)
   .then(function(remoteData) {
-    // 双向合并：远程 ∪ 本地，冲突时本地优先，另一方设备的数据不丢失
+    // 双向合并 + 快照删除检测
     remoteData = remoteData || { entries: {}, ledger: [] };
     var rEntries = remoteData.entries || {};
     var lEntries = localData.entries || {};
     var rLedger = Array.isArray(remoteData.ledger) ? remoteData.ledger : [];
     var lLedger = Array.isArray(localData.ledger) ? localData.ledger : [];
 
+    // 读取上次同步快照，用于判断"本地删除"vs"远程新增"
+    var snapshotKey = key + '_snapshot';
+    var snapshot = {};
+    try { snapshot = JSON.parse(localStorage.getItem(snapshotKey) || '{}'); } catch(e) {}
+    var snapEntries = snapshot.entries || {};
+    var snapLedger = Array.isArray(snapshot.ledger) ? snapshot.ledger : [];
+
     // entries: 先保留远程所有，本地覆盖（新增 + 修改），远程独有保留
     var mergedEntries = {};
     Object.keys(rEntries).forEach(function(k) { mergedEntries[k] = rEntries[k]; });
     Object.keys(lEntries).forEach(function(k) { mergedEntries[k] = lEntries[k]; });
+
+    // 删除检测：snapshot 中有但 local 没有 → 本地主动删除了 → 从 merged 移除
+    Object.keys(snapEntries).forEach(function(k) {
+      if (!(k in lEntries)) delete mergedEntries[k];
+    });
 
     // ledger: 本地涉及的日期以本地为准，其余保留远程
     var localDates = {};
     lLedger.forEach(function(t) { if (t && t.date) localDates[t.date] = true; });
     var mergedLedger = rLedger.filter(function(t) { return !t || !t.date || !localDates[t.date]; });
     lLedger.forEach(function(t) { mergedLedger.push(t); });
+
+    // ledger 删除检测：snapshot 日期存在但 local 中不存在 → 本地删除
+    var snapDates = {};
+    snapLedger.forEach(function(t) { if (t && t.date) snapDates[t.date] = true; });
+    mergedLedger = mergedLedger.filter(function(t) {
+      if (!t || !t.date) return true;
+      if (snapDates[t.date] && !localDates[t.date]) return false;
+      return true;
+    });
 
     var mergedData = {
       version: localData.version || 1,
@@ -4443,9 +4464,12 @@ function exportMonthlyArchive() {
       return;
     }
 
-    // 有差异，推送合并结果；成功后回写本地保持两端一致
+    // 有差异，推送合并结果；成功后回写本地 + 更新快照
     return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
-      .then(function() { try { localStorage.setItem(key, JSON.stringify(mergedData)); } catch(e) {} });
+      .then(function() {
+        try { localStorage.setItem(key, JSON.stringify(mergedData)); } catch(e) {}
+        try { localStorage.setItem(snapshotKey, JSON.stringify(mergedData)); } catch(e) {}
+      });
   })
   .then(function(result) {
     if (result === undefined) return;

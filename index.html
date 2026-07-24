@@ -4408,12 +4408,33 @@ function exportMonthlyArchive() {
 
   _gitFetchRemoteData(filename)
   .then(function(remoteData) {
-    // 本地为权威基准，直接比较是否一致
-    var remoteStr = remoteData ? JSON.stringify(remoteData) : '';
-    var localStr = JSON.stringify(localData);
+    // 双向合并：远程 ∪ 本地，冲突时本地优先，另一方设备的数据不丢失
+    remoteData = remoteData || { entries: {}, ledger: [] };
+    var rEntries = remoteData.entries || {};
+    var lEntries = localData.entries || {};
+    var rLedger = Array.isArray(remoteData.ledger) ? remoteData.ledger : [];
+    var lLedger = Array.isArray(localData.ledger) ? localData.ledger : [];
 
-    if (remoteStr === localStr) {
-      // 无差异，跳过 PUT
+    // entries: 先保留远程所有，本地覆盖（新增 + 修改），远程独有保留
+    var mergedEntries = {};
+    Object.keys(rEntries).forEach(function(k) { mergedEntries[k] = rEntries[k]; });
+    Object.keys(lEntries).forEach(function(k) { mergedEntries[k] = lEntries[k]; });
+
+    // ledger: 本地涉及的日期以本地为准，其余保留远程
+    var localDates = {};
+    lLedger.forEach(function(t) { if (t && t.date) localDates[t.date] = true; });
+    var mergedLedger = rLedger.filter(function(t) { return !t || !t.date || !localDates[t.date]; });
+    lLedger.forEach(function(t) { mergedLedger.push(t); });
+
+    var mergedData = {
+      version: localData.version || 1,
+      exportedAt: new Date().toISOString(),
+      entries: mergedEntries,
+      ledger: mergedLedger
+    };
+
+    // 比对合并结果与远程原始数据
+    if (JSON.stringify(remoteData) === JSON.stringify(mergedData)) {
       btn.classList.remove('syncing');
       btn.textContent = '本月备份同步';
       btn.disabled = false;
@@ -4422,11 +4443,11 @@ function exportMonthlyArchive() {
       return;
     }
 
-    // 有差异，以本地覆盖远程
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(localData, null, 2) });
+    // 有差异，推送合并结果；成功后回写本地保持两端一致
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(mergedData, null, 2) })
+      .then(function() { try { localStorage.setItem(key, JSON.stringify(mergedData)); } catch(e) {} });
   })
   .then(function(result) {
-    // result 为 undefined 时是跳过分支，直接 return
     if (result === undefined) return;
 
     btn.classList.remove('syncing');

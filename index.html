@@ -4475,8 +4475,13 @@ function exportMonthlyArchive() {
       ledger: mergedLedger
     };
 
-    // 比对合并结果与远程原始数据
-    if (JSON.stringify(remoteData) === JSON.stringify(mergedData)) {
+    // 比对合并结果与远程原始数据（排除 exportedAt 时间戳，避免每次都误判为"有差异"）
+    function _stripTs(o) {
+      var c = JSON.parse(JSON.stringify(o || {}));
+      delete c.exportedAt;
+      return c;
+    }
+    if (JSON.stringify(_stripTs(remoteData)) === JSON.stringify(_stripTs(mergedData))) {
       btn.classList.remove('syncing');
       btn.classList.add('synced');
       btn.textContent = '已是最新 \u2713';

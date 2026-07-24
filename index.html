@@ -876,25 +876,26 @@ body.focus-mode .month-summary { display: none !important; }
   cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap;
 }
 .btn-settings-primary {
-  background: var(--c-primary); color: #fff;
+  background: var(--c-primary); color: #fff; border: none;
+  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .btn-settings-primary:hover { opacity: 0.85; }
+.btn-settings-primary:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 25%, transparent); }
 .btn-settings-secondary {
-  background: var(--c-bg-mid); color: var(--c-text);
+  background: var(--c-bg-mid); color: var(--c-text); border: none;
+  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .btn-settings-secondary:hover { opacity: 0.8; }
+.btn-settings-secondary:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
 .btn-settings-inline {
   background: none; border: 1px solid var(--c-bg-mid); color: var(--c-text-mid);
   padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
   cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
 }
 .btn-settings-inline:hover { background: var(--c-bg-mid); color: var(--c-text); }
-.token-copy-btn {
-  background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
-  padding: 6px 8px; cursor: pointer; font-size: 12px; color: var(--c-text-mid);
-  transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
-}
-.token-copy-btn:hover { background: var(--c-bg-mid); color: var(--c-text); }
+.btn-settings-inline:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
 .btn-settings-danger {
   width: 100%; padding: 10px; border-radius: 10px; font-size: 13px;
   font-weight: 600; cursor: pointer; border: none;
@@ -910,10 +911,11 @@ body.focus-mode .month-summary { display: none !important; }
 .token-copy-btn {
   background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
   padding: 6px 10px; cursor: pointer; font-size: 12px; color: var(--c-text-mid);
-  transition: all 0.2s; font-weight: 600; white-space: nowrap;
+  transition: all 0.2s; font-weight: 600; white-space: nowrap; flex-shrink: 0;
 }
 .token-copy-btn:hover { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
 .token-copy-btn.copied { background: #4caf50; border-color: #4caf50; color: #fff; }
+.token-copy-btn:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent); }
 /* Token 编辑行防换行 */
 #tokenEditRow { flex-wrap: nowrap !important; }
 #tokenEditRow .token-edit { flex: 1 1 auto; min-width: 0; }

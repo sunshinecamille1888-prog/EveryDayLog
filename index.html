@@ -71,6 +71,8 @@
     body.theme-dark .tb-btn,
     body.theme-dark .st-tab,
     body.theme-dark .btn-calendar,
+    body.theme-dark .btn-logout,
+    body.theme-dark .user-display,
     body.theme-dark .tpl-cancel,
     body.theme-dark .btn-today,
     body.theme-dark .calendar-header button { background: #3a3028; color: #d4a843; }
@@ -813,12 +815,11 @@ body.focus-mode .month-summary { display: none !important; }
   letter-spacing: 0.5px;
 }
 .btn-logout {
-  background: none; border: 1px solid var(--c-bg-mid); color: var(--c-text-mid);
-  padding: 4px 14px; border-radius: 12px; font-size: 11px; cursor: pointer;
-  font-weight: 600; transition: all 0.25s; margin-left: 8px;
-  opacity: 0.7;
+  background: var(--c-bg); border: none; color: var(--c-primary);
+  padding: 7px 16px; border-radius: 14px; font-size: 13px; cursor: pointer;
+  font-weight: 600; transition: all 0.2s; margin-left: 8px; white-space: nowrap;
 }
-.btn-logout:hover { background: var(--c-bg-mid); color: var(--c-text); opacity: 1; }
+.btn-logout:hover { background: var(--c-bg-mid); transform: translateY(-1px); }
 
 /* Token 管理 */
 .token-display-row { display: flex; align-items: center; gap: 5px; width: 100%; }
@@ -848,11 +849,11 @@ body.focus-mode .month-summary { display: none !important; }
 /* 用户入口 */
 .user-display {
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
-  font-size: 12px; font-weight: 600; color: var(--c-text); padding: 4px 12px;
-  border-radius: 12px; border: 1px solid var(--c-bg-mid); background: none;
-  transition: all 0.25s; margin-left: 8px; opacity: 0.7;
+  font-size: 13px; font-weight: 600; color: var(--c-primary); padding: 7px 16px;
+  border-radius: 14px; border: none; background: var(--c-bg);
+  transition: all 0.2s; margin-left: 8px;
 }
-.user-display:hover { background: var(--c-bg-mid); opacity: 1; }
+.user-display:hover { background: var(--c-bg-mid); transform: translateY(-1px); }
 
 /* 设置面板 */
 .settings-overlay {

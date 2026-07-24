@@ -5306,20 +5306,24 @@ function exportMonthlyArchive() {
   var btn = document.getElementById('gitSyncBtn');
   if (!btn) return;
 
-  // 先同步最新 entries → backup，确保累积时间等数据是最新的
+  // 先同步最新 entries + ledger → backup，全量覆盖当月数据（含删除）
   try {
     var freshEntries = loadEntries();
     var monthPrefix = _backupMonthKey();
     var backup = _loadBackup();
-    Object.keys(freshEntries).forEach(function(d) {
+    // entries: 仅保留当月真实存在的日期，已删除的日期不写入
+    var newEntries = {};
+    Object.keys(freshEntries || {}).forEach(function(d) {
       if (d && d.indexOf(monthPrefix) === 0 && freshEntries[d]) {
-        backup.entries[d] = freshEntries[d];
+        newEntries[d] = freshEntries[d];
       }
     });
+    backup.entries = newEntries;
+    // ledger: 当月全部账目覆盖，删除自然消除
     var allLedger = getLedgerData();
-    var todayLedger = allLedger.filter(function(t) { return t.date === currentDate; });
-    backup.ledger = backup.ledger.filter(function(t) { return t.date !== currentDate; });
-    backup.ledger = backup.ledger.concat(todayLedger);
+    backup.ledger = (allLedger || []).filter(function(t) {
+      return t && t.date && t.date.indexOf(monthPrefix) === 0;
+    });
     backup._updatedAt = new Date().toISOString();
     _saveBackup(backup);
   } catch(e) {}

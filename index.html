@@ -1786,6 +1786,7 @@ function setSettingsStatus(id, ok, msg) {
 async function saveUsername() {
   var newU = document.getElementById('settingsUsername').value.trim();
   if (!newU) { setSettingsStatus('statusUsername', false, '用户名不能为空'); return; }
+  if (newU === sessionStorage.getItem(SESSION_USER_KEY)) { setSettingsStatus('statusUsername', false, '用户名未变更，无需保存'); return; }
   var ph = getSessionPwhash();
   if (!ph) { setSettingsStatus('statusUsername', false, '会话已过期，请重新登录'); return; }
   setSettingsStatus('statusUsername', null, '正在保存…');

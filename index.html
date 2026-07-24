@@ -809,6 +809,89 @@ body.focus-mode .month-summary { display: none !important; }
 /* 恢复模式 */
 #auth-recovery-group { margin-top: 4px; }
 
+/* 用户入口 */
+.user-display {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--c-text); padding: 4px 12px;
+  border-radius: 12px; border: 1px solid var(--c-bg-mid); background: none;
+  transition: all 0.25s; margin-left: 8px; opacity: 0.7;
+}
+.user-display:hover { background: var(--c-bg-mid); opacity: 1; }
+.user-display .gear-icon { font-size: 13px; }
+/* 设置面板 */
+.settings-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1001;
+  background: rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  justify-content: center; align-items: center;
+}
+.settings-overlay.open { display: flex; }
+.settings-panel {
+  background: var(--c-bg-card); border-radius: 18px; padding: 32px;
+  width: 420px; max-width: 92vw; max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  position: relative;
+}
+.settings-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px;
+}
+.settings-header h3 { font-size: 18px; font-weight: 700; color: var(--c-text); margin: 0; }
+.settings-close {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  color: var(--c-text-mid); padding: 4px 8px; border-radius: 6px;
+  transition: all 0.2s; line-height: 1;
+}
+.settings-close:hover { background: var(--c-bg-mid); color: var(--c-text); }
+.settings-section { margin-bottom: 22px; }
+.settings-section h4 {
+  font-size: 12px; color: var(--c-text-mid); margin: 0 0 10px 0;
+  padding-bottom: 6px; border-bottom: 1px solid var(--c-bg-mid);
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.settings-field { margin-bottom: 10px; }
+.settings-field label {
+  display: block; font-size: 11px; color: var(--c-text-mid); margin-bottom: 4px;
+  font-weight: 600;
+}
+.settings-field input[type="text"],
+.settings-field input[type="password"] {
+  width: 100%; padding: 8px 12px; border: 1.5px solid var(--c-bg-mid);
+  border-radius: 10px; font-size: 13px; background: var(--c-bg);
+  color: var(--c-text); outline: none; box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.settings-field input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent); }
+.settings-field-row { display: flex; gap: 8px; }
+.settings-field-row input { flex: 1; }
+.settings-field-row button {
+  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap;
+}
+.btn-settings-primary {
+  background: var(--c-primary); color: #fff;
+}
+.btn-settings-primary:hover { opacity: 0.85; }
+.btn-settings-secondary {
+  background: var(--c-bg-mid); color: var(--c-text);
+}
+.btn-settings-secondary:hover { opacity: 0.8; }
+.btn-settings-inline {
+  background: none; border: 1px solid var(--c-bg-mid); color: var(--c-text-mid);
+}
+.btn-settings-inline:hover { background: var(--c-bg-mid); color: var(--c-text); }
+.btn-settings-danger {
+  width: 100%; padding: 10px; border-radius: 10px; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: 1.5px solid #e53935;
+  background: none; color: #e53935; transition: all 0.2s;
+}
+.btn-settings-danger:hover { background: #e53935; color: #fff; }
+.settings-pw-row { display: none; margin-top: 8px; }
+.settings-pw-row.open { display: block; }
+.settings-field .inline-hint {
+  font-size: 10px; color: var(--c-text-mid); margin-top: 2px;
+}
+
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="data:,">
@@ -839,6 +922,79 @@ body.focus-mode .month-summary { display: none !important; }
       <span id="auth-forgot-sep" style="display:none"> | </span><a href="javascript:void(0)" id="auth-forgot-link" style="display:none" onclick="showRecoveryMode()">忘记密码？</a>
     </div>
     <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- 设置面板 -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel">
+    <div class="settings-header">
+      <h3>账户设置</h3>
+      <button class="settings-close" onclick="closeSettings()">&times;</button>
+    </div>
+
+    <!-- 基本信息 -->
+    <div class="settings-section">
+      <h4>基本信息</h4>
+      <div class="settings-field">
+        <label>用户名</label>
+        <div class="settings-field-row">
+          <input type="text" id="settingsUsername" placeholder="用户名">
+          <button class="btn-settings-primary" onclick="saveUsername()">保存</button>
+        </div>
+      </div>
+      <div class="settings-field">
+        <label>密码</label>
+        <div class="settings-field-row">
+          <input type="password" id="settingsPwDisplay" value="••••••••" disabled style="flex:1;">
+          <button class="btn-settings-secondary" id="settingsPwBtn" onclick="toggleChangePw()">修改</button>
+        </div>
+        <div class="settings-pw-row" id="settingsPwRow">
+          <div class="settings-field" style="margin-top:8px;">
+            <input type="password" id="settingsOldPw" placeholder="旧密码">
+          </div>
+          <div class="settings-field">
+            <input type="password" id="settingsNewPw" placeholder="新密码">
+          </div>
+          <div class="settings-field">
+            <input type="password" id="settingsNewPw2" placeholder="确认新密码">
+          </div>
+          <div class="settings-field-row">
+            <button class="btn-settings-primary" onclick="confirmChangePassword()">确认修改</button>
+            <button class="btn-settings-secondary" onclick="cancelChangePw()">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token 管理 -->
+    <div class="settings-section">
+      <h4>Token 管理</h4>
+      <div class="settings-field">
+        <label>注册码</label>
+        <div class="settings-field-row">
+          <input type="text" id="settingsInviteCode" placeholder="注册码">
+          <button class="btn-settings-primary" onclick="saveInviteCode()">保存</button>
+        </div>
+        <div class="inline-hint">修改后需验证 invites.json 中的有效性</div>
+      </div>
+      <div class="settings-field" style="margin-top:10px;">
+        <label>Token</label>
+        <div class="token-display-row">
+          <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
+          <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏">👁</button>
+          <button class="btn-settings-inline" id="tokenEditBtn" onclick="editToken()">编辑</button>
+        </div>
+      </div>
+      <div class="export-row" id="tokenEditRow" style="display:none;margin-top:6px;">
+        <input type="text" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
+        <button class="btn-settings-primary" id="tokenSaveBtn" onclick="saveToken()" style="margin-left:6px;">保存</button>
+        <button class="btn-settings-secondary" id="tokenCancelBtn" onclick="cancelEditToken()" style="margin-left:4px;">取消</button>
+      </div>
+    </div>
+
+    <!-- 登出 -->
+    <button class="btn-settings-danger" onclick="logout();closeSettings();">退出登录</button>
   </div>
 </div>
 
@@ -930,6 +1086,7 @@ body.focus-mode .month-summary { display: none !important; }
       </div>
       <div class="sync-dot idle" id="syncDot" data-tip="点击导入备份" onclick="localSync()" title="导入备份"></div>
       <span class="device-tag" id="deviceTag" title="当前设备类型"></span>
+      <span class="user-display" id="userDisplay" onclick="openSettings()" title="账户设置"><span id="userNameDisplay"></span><span class="gear-icon">&#9881;</span></span>
       <button class="btn-logout" id="btnLogout" onclick="logout()" title="登出">登出</button>
     </div>
 
@@ -1112,22 +1269,6 @@ body.focus-mode .month-summary { display: none !important; }
           <span id="scheduleStatus" class="schedule-status"></span>
         </div>
       </div>
-      <!-- Token 管理 -->
-      <div class="export-section" id="tokenMgmtSection">
-        <div class="export-header">Token 管理</div>
-        <div class="export-row" style="margin-top:8px;">
-          <div class="token-display-row">
-            <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
-            <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏">👁</button>
-            <button class="btn-backup" id="tokenEditBtn" onclick="editToken()">编辑</button>
-          </div>
-        </div>
-        <div class="export-row" id="tokenEditRow" style="display:none;margin-top:6px;">
-          <input type="text" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
-          <button class="btn-backup" id="tokenSaveBtn" onclick="saveToken()" style="margin-left:6px;">保存</button>
-          <button class="btn-backup" id="tokenCancelBtn" onclick="cancelEditToken()" style="margin-left:4px;background:transparent;color:var(--c-text-mid);border:1px solid var(--c-bg-mid);">取消</button>
-        </div>
-      </div>
     </div>
 
   </div>
@@ -1145,6 +1286,7 @@ body.focus-mode .month-summary { display: none !important; }
 const GIT_TOKEN_KEY = 'daily-doc-git-token';
 const SESSION_PWHASH_KEY = 'edl_session_pwhash';
 const SESSION_TOKENENC_KEY = 'edl_session_tokenenc';
+const SESSION_USER_KEY = 'edl_session_user';
 const GITHUB_AUTH_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/auth.json';
 const GITHUB_AUTH_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/auth.json';
 const GITHUB_INVITES_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/invites.json';
@@ -1243,10 +1385,10 @@ function showRecoveryMode() {
 function showApp() {
   document.getElementById('auth-overlay').style.display = 'none';
   if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
-  loadTokenDisplay();
+  updateUserDisplay();
 }
 function logout() {
-  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); } catch(e) {}
+  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); sessionStorage.removeItem(SESSION_USER_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
@@ -1334,6 +1476,7 @@ async function handleRegister() {
     if (putRes.ok) {
       sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
       sessionStorage.setItem(SESSION_TOKENENC_KEY, tokEnc);
+      sessionStorage.setItem(SESSION_USER_KEY, u);
       localStorage.setItem(GIT_TOKEN_KEY, tok);
       showApp();
     } else {
@@ -1362,6 +1505,7 @@ async function handleLogin() {
     var tok = await aesDecrypt(remote.token_enc, ph);
     sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
+    sessionStorage.setItem(SESSION_USER_KEY, u);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
   } catch(e) { err.textContent = '登录失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '登录'; }
@@ -1450,6 +1594,7 @@ async function handleRecovery() {
     // 恢复成功：用新密码写入 sessionStorage，Token 用旧加密值（用户登录后会解密失败，需引导去 Token 管理更新）
     sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
+    sessionStorage.setItem(SESSION_USER_KEY, u);
     localStorage.setItem(GIT_TOKEN_KEY, recoveryTok);
     showToast('密码已重置，请前往 Token 管理更新 Token');
     // 恢复 auth-password placeholder
@@ -1554,6 +1699,181 @@ async function saveToken() {
     }
   } catch(e) { showToast('保存 Token 失败: ' + (e.message || e)); }
   btnSave.disabled = false; btnSave.textContent = '保存';
+}
+
+// ═══ 设置面板 ═══
+function updateUserDisplay() {
+  var u = null;
+  try { u = sessionStorage.getItem(SESSION_USER_KEY); } catch(e) {}
+  var el = document.getElementById('userNameDisplay');
+  if (el) el.textContent = u || '用户';
+  var ud = document.getElementById('userDisplay');
+  if (ud) ud.style.display = u ? 'inline-flex' : 'none';
+}
+
+function openSettings() {
+  try {
+    var u = sessionStorage.getItem(SESSION_USER_KEY);
+    if (u) document.getElementById('settingsUsername').value = u;
+  } catch(e) {}
+  document.getElementById('settingsOverlay').classList.add('open');
+  // 重置密码修改区域
+  cancelChangePw();
+  // 同步加载 Token 显示
+  loadTokenDisplay();
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+// ═══ 用户名修改 ═══
+async function saveUsername() {
+  var newU = document.getElementById('settingsUsername').value.trim();
+  if (!newU) { showToast('用户名不能为空'); return; }
+  var ph = getSessionPwhash();
+  if (!ph) { showToast('会话已过期，请重新登录'); return; }
+  try {
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
+    var remote = await res.json();
+    var tok = await aesDecrypt(remote.token_enc, ph);
+    remote.user = newU;
+    var contentB64 = _strToB64(JSON.stringify(remote));
+    // GET sha
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
+      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
+      else throw new Error('无法访问仓库 (' + getRes.status + ')');
+    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
+    var putBody = { message: 'update username', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    var putRes = await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
+    sessionStorage.setItem(SESSION_USER_KEY, newU);
+    updateUserDisplay();
+    showToast('用户名已更新');
+  } catch(e) { showToast('用户名修改失败: ' + (e.message || e)); }
+}
+
+// ═══ 密码修改 ═══
+function toggleChangePw() {
+  var row = document.getElementById('settingsPwRow');
+  var btn = document.getElementById('settingsPwBtn');
+  if (row.classList.contains('open')) { cancelChangePw(); return; }
+  row.classList.add('open');
+  btn.textContent = '取消';
+  document.getElementById('settingsOldPw').value = '';
+  document.getElementById('settingsNewPw').value = '';
+  document.getElementById('settingsNewPw2').value = '';
+}
+
+function cancelChangePw() {
+  var row = document.getElementById('settingsPwRow');
+  row.classList.remove('open');
+  document.getElementById('settingsPwBtn').textContent = '修改';
+  document.getElementById('settingsOldPw').value = '';
+  document.getElementById('settingsNewPw').value = '';
+  document.getElementById('settingsNewPw2').value = '';
+}
+
+async function confirmChangePassword() {
+  var oldPw = document.getElementById('settingsOldPw').value;
+  var newPw = document.getElementById('settingsNewPw').value;
+  var newPw2 = document.getElementById('settingsNewPw2').value;
+  if (!oldPw) { showToast('请输入旧密码'); return; }
+  if (!newPw || newPw.length < 4) { showToast('新密码至少 4 位'); return; }
+  if (newPw !== newPw2) { showToast('两次新密码不一致'); return; }
+  var oldPh = await sha256(oldPw);
+  try {
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
+    var remote = await res.json();
+    if (remote.pwhash !== oldPh) { showToast('旧密码错误'); return; }
+    // 用旧密码解密 backup_key
+    var backupKey = null;
+    if (remote.encrypted_backup_key) {
+      backupKey = await aesDecrypt(remote.encrypted_backup_key, oldPh);
+    }
+    var tok = null;
+    if (remote.token_enc) {
+      try { tok = await aesDecrypt(remote.token_enc, oldPh); } catch(e) { /* 解密失败则跳过更新 token_enc */ }
+    }
+    var newPh = await sha256(newPw);
+    remote.pwhash = newPh;
+    if (backupKey) remote.encrypted_backup_key = await aesEncrypt(backupKey, newPh);
+    if (tok) remote.token_enc = await aesEncrypt(tok, newPh);
+    var contentB64 = _strToB64(JSON.stringify(remote));
+    // 需要 Token 做 PUT
+    var putToken = tok;
+    if (!putToken) { showToast('无法解密现有 Token，请先在 Token 管理中更新后再修改密码'); return; }
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + putToken, 'Accept': 'application/vnd.github+json' } });
+      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
+      else throw new Error('无法访问仓库 (' + getRes.status + ')');
+    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
+    var putBody = { message: 'change password', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    var putRes = await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + putToken, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
+    sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
+    if (remote.token_enc) sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
+    cancelChangePw();
+    showToast('密码已更新');
+  } catch(e) { showToast('密码修改失败: ' + (e.message || e)); }
+}
+
+// ═══ 注册码修改 ═══
+async function saveInviteCode() {
+  var newCode = document.getElementById('settingsInviteCode').value.trim();
+  if (!newCode) { showToast('请输入注册码'); return; }
+  var ph = getSessionPwhash();
+  if (!ph) { showToast('会话已过期，请重新登录'); return; }
+  try {
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
+    var remote = await res.json();
+    var tok = await aesDecrypt(remote.token_enc, ph);
+    // 验证新注册码在 invites.json 中
+    var newCodeHash = await sha256(newCode);
+    var invRes = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
+    if (!invRes.ok) throw new Error('无法获取邀请列表 (' + invRes.status + ')');
+    var invData = await invRes.json();
+    var invEntry = (invData.invites || {})[newCodeHash];
+    if (!invEntry) { showToast('注册码无效，未在 invites.json 中找到'); return; }
+    // 用旧密码解密 backup_key
+    var backupKey = null;
+    if (remote.encrypted_backup_key) {
+      backupKey = await aesDecrypt(remote.encrypted_backup_key, ph);
+    }
+    // 更新 invite_code_hash 和 recovery_encrypted_backup_key
+    remote.invite_code_hash = newCodeHash;
+    if (backupKey) remote.recovery_encrypted_backup_key = await aesEncrypt(backupKey, newCodeHash);
+    var contentB64 = _strToB64(JSON.stringify(remote));
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
+      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
+      else throw new Error('无法访问仓库 (' + getRes.status + ')');
+    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
+    var putBody = { message: 'update invite code', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    var putRes = await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (!putRes.ok) { var putErr = await putRes.text(); throw new Error('保存失败 (' + putRes.status + '): ' + putErr.substring(0, 200)); }
+    document.getElementById('settingsInviteCode').value = '';
+    showToast('注册码已更新');
+  } catch(e) { showToast('注册码修改失败: ' + (e.message || e)); }
 }
 
 // ═══ 初始化 ═══

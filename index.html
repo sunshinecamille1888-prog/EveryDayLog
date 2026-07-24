@@ -3701,11 +3701,22 @@ function localSync() {
       if (!backup) throw new Error('解析失败');
       var r = mergeBackupData(backup);
       d.className = 'sync-dot synced';
-      d.setAttribute('data-tip', '已同步 · 点击刷新');
+      var scfg = loadScheduleConfig();
+      if (scfg && scfg.type === 'daily') {
+        d.setAttribute('data-tip', '已同步 · 每天 ' + scfg.time);
+      } else if (scfg && scfg.type === 'monthly') {
+        d.setAttribute('data-tip', '已同步 · 每月' + scfg.day + '号 ' + scfg.time);
+      } else {
+        d.setAttribute('data-tip', '已同步 · 点击刷新');
+      }
       if (m) { m.className = 'sync-btn-mobile synced'; }
       var msg = '已同步';
       if (r.diary) msg += '，导入 ' + r.diary + ' 天日记';
       if (r.ledger) msg += '，导入 ' + r.ledger + ' 条账目';
+      if (scfg) {
+        if (scfg.type === 'daily') msg += '\n定时备份: 每天 ' + scfg.time;
+        else if (scfg.type === 'monthly') msg += '\n定时备份: 每月' + scfg.day + '号 ' + scfg.time;
+      }
       showToast(msg);
       _triggerGitAction();
     })
@@ -3717,7 +3728,14 @@ function localSync() {
       showToast('导入失败: ' + errMsg);
       setTimeout(function() {
         d.className = 'sync-dot idle';
-        d.setAttribute('data-tip', '点击导入备份');
+        var scfg2 = loadScheduleConfig();
+        if (scfg2 && scfg2.type === 'daily') {
+          d.setAttribute('data-tip', '定时: 每天 ' + scfg2.time);
+        } else if (scfg2 && scfg2.type === 'monthly') {
+          d.setAttribute('data-tip', '定时: 每月' + scfg2.day + '号 ' + scfg2.time);
+        } else {
+          d.setAttribute('data-tip', '点击导入备份');
+        }
         if (m) { m.className = 'sync-btn-mobile idle'; }
       }, 3000);
     });
@@ -5918,12 +5936,32 @@ function initScheduleUI() {
       status.textContent = '运行中 · 每月' + (cfg.day || 1) + '号 ' + cfg.time;
     }
     startScheduleTimer(cfg);
+    var syncDot = document.getElementById('syncDot');
+    if (syncDot) {
+      if (cfg.type === 'daily') {
+        syncDot.setAttribute('data-tip', '定时: 每天 ' + cfg.time);
+      } else {
+        syncDot.setAttribute('data-tip', '定时: 每月' + (cfg.day || 1) + '号 ' + cfg.time);
+      }
+    }
+    var syncBtnMobile = document.getElementById('syncBtnMobile');
+    if (syncBtnMobile) {
+      if (cfg.type === 'daily') {
+        syncBtnMobile.setAttribute('data-tip', '定时: 每天 ' + cfg.time);
+      } else {
+        syncBtnMobile.setAttribute('data-tip', '定时: 每月' + (cfg.day || 1) + '号 ' + cfg.time);
+      }
+    }
   } else {
     stopScheduleTimer();
     modeEl.disabled = false;
     dayEl.disabled = false;
     timeEl.disabled = false;
     status.textContent = '';
+    var syncDot2 = document.getElementById('syncDot');
+    if (syncDot2) { syncDot2.setAttribute('data-tip', '点击导入备份'); }
+    var syncBtnMobile2 = document.getElementById('syncBtnMobile');
+    if (syncBtnMobile2) { syncBtnMobile2.setAttribute('data-tip', '点击导入备份'); }
   }
 }
 

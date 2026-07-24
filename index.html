@@ -4408,11 +4408,27 @@ function exportMonthlyArchive() {
 
   _gitFetchRemoteData(filename)
   .then(function(remoteData) {
-    var merged = _deepMergeBackup(remoteData, localData);
-    try { localStorage.setItem(key, JSON.stringify(merged)); } catch(e) {}
-    return _gitSyncFetch({ filename: filename, content: JSON.stringify(merged, null, 2) });
+    // 本地为权威基准，直接比较是否一致
+    var remoteStr = remoteData ? JSON.stringify(remoteData) : '';
+    var localStr = JSON.stringify(localData);
+
+    if (remoteStr === localStr) {
+      // 无差异，跳过 PUT
+      btn.classList.remove('syncing');
+      btn.textContent = '本月备份同步';
+      btn.disabled = false;
+      showToast('数据已是最新，无需同步');
+      _checkGitSyncBtn();
+      return;
+    }
+
+    // 有差异，以本地覆盖远程
+    return _gitSyncFetch({ filename: filename, content: JSON.stringify(localData, null, 2) });
   })
-  .then(function() {
+  .then(function(result) {
+    // result 为 undefined 时是跳过分支，直接 return
+    if (result === undefined) return;
+
     btn.classList.remove('syncing');
     btn.classList.add('synced');
     btn.textContent = '已同步 \u2713';

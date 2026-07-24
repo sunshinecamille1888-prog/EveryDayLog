@@ -482,7 +482,14 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .btn-calendar { padding: 6px 10px; font-size: 11px; }
   .date-timer-summary { font-size: 12px; margin-left: 0; }
   .sync-dot { display: none; }
-  .sync-btn-mobile { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 14px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid; white-space: nowrap; }
+  .sync-btn-mobile { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer; border: none; background: transparent; padding: 0; line-height: 1; transition: background 0.2s, transform 0.15s; -webkit-tap-highlight-color: transparent; }
+  .sync-btn-mobile:active { transform: scale(0.88); }
+  .sync-btn-mobile.syncing { background: #fff3e0; animation: sync-pulse 0.8s infinite; }
+  .sync-btn-mobile.synced { background: #e8f5e9; }
+  .sync-btn-mobile.error { background: #ffebee; }
+  body.theme-dark .sync-btn-mobile.syncing { background: #3e2723; }
+  body.theme-dark .sync-btn-mobile.synced { background: #1b3a1b; }
+  body.theme-dark .sync-btn-mobile.error { background: #3e1a1a; }
   .user-display { margin-left: auto; padding: 6px 10px; font-size: 11px; }
   .btn-logout { padding: 6px 10px; font-size: 11px; }
 
@@ -746,13 +753,6 @@ body.focus-mode .month-summary { display: none !important; }
 @keyframes sync-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 .sync-dot::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
 .sync-dot:hover::after { opacity: 1; }
-
-/* 移动端导入备份按钮状态色 */
-.sync-btn-mobile.synced { background: #4caf50; color: #fff; border-color: #4caf50; }
-.sync-btn-mobile.syncing { background: #ff9800; color: #fff; border-color: #ff9800; }
-.sync-btn-mobile.error { background: #f44336; color: #fff; border-color: #f44336; }
-.sync-btn-mobile.idle { background: #fff; color: var(--c-text-mid); border-color: #ccc; }
-body.theme-dark .sync-btn-mobile.idle { background: #2a241c; color: #b0a48a; border-color: #3a3028; }
 
 /* ── 用户鉴权 ── */
 #auth-overlay {
@@ -1145,7 +1145,7 @@ body.theme-dark .sync-btn-mobile.idle { background: #2a241c; color: #b0a48a; bor
     <div class="date-header">
       <button class="btn-calendar" id="btnCalendar" onclick="toggleCalendar()">日历</button>
       <span class="date-title" id="dateTitle"></span>
-      <button class="sync-btn-mobile idle" id="syncBtnMobile" onclick="localSync()">📥 导入</button>
+      <button class="sync-btn-mobile idle" id="syncBtnMobile" onclick="localSync()">📥</button>
       <span class="date-timer-summary" id="dateTimerSummary"></span>
       <span class="header-actions">
         <button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="音效开关">
@@ -3443,7 +3443,7 @@ function localSync() {
   if (!d) return;
   d.className = 'sync-dot syncing';
   d.setAttribute('data-tip', '同步中…');
-  if (m) { m.className = 'sync-btn-mobile syncing'; m.innerHTML = '⏳ 同步中…'; }
+  if (m) { m.className = 'sync-btn-mobile syncing'; m.innerHTML = '⏳'; }
   var parts = currentDate.split('-');
   var fname = 'backup-' + parts[0] + '-' + parts[1] + '.json';
   fetch(fname)
@@ -3459,7 +3459,7 @@ function localSync() {
       var r = mergeBackupData(backup);
       d.className = 'sync-dot synced';
       d.setAttribute('data-tip', '已同步 · 点击刷新');
-      if (m) { m.className = 'sync-btn-mobile synced'; m.innerHTML = '✅ 已同步'; }
+      if (m) { m.className = 'sync-btn-mobile synced'; m.innerHTML = '✅'; }
       var msg = '已同步';
       if (r.diary) msg += '，导入 ' + r.diary + ' 天日记';
       if (r.ledger) msg += '，导入 ' + r.ledger + ' 条账目';
@@ -3469,12 +3469,12 @@ function localSync() {
     .catch(function() {
       d.className = 'sync-dot error';
       d.setAttribute('data-tip', '同步失败 · 点击重试');
-      if (m) { m.className = 'sync-btn-mobile error'; m.innerHTML = '❌ 重试'; }
+      if (m) { m.className = 'sync-btn-mobile error'; m.innerHTML = '❌'; }
       showToast('未找到 ' + fname);
       setTimeout(function() {
         d.className = 'sync-dot idle';
         d.setAttribute('data-tip', '点击导入备份');
-        if (m) { m.className = 'sync-btn-mobile idle'; m.innerHTML = '📥 导入'; }
+        if (m) { m.className = 'sync-btn-mobile idle'; m.innerHTML = '📥'; }
       }, 3000);
     });
 }

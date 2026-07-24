@@ -4748,6 +4748,7 @@ function drawMoodChart() {
   const chartH = H - pad.top - pad.bottom;
 
   statsCtx.clearRect(0, 0, W, H);
+  window._barRects = []; // 清空柱状图悬浮区域，避免显示错误的时长格式
 
   // 标题
   statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 14px -apple-system, sans-serif';
@@ -5196,6 +5197,7 @@ function drawLedgerTrend() {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   ctx.clearRect(0, 0, W, H);
+  window._barRects = []; // 清空柱状图悬浮区域，避免显示错误的时长格式
 
   const months = getMonthDays();
   const txns = getLedgerData();

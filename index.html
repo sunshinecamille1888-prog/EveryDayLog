@@ -906,6 +906,11 @@ body.focus-mode .month-summary { display: none !important; }
 }
 .settings-field input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent); }
 .settings-field-row { display: flex; gap: 8px; }
+.pw-wrapper { position: relative; display: flex; align-items: center; }
+.pw-wrapper input[type="password"],
+.pw-wrapper input[type="text"] { width: 100%; padding-right: 38px !important; }
+.pw-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; color: var(--c-text-mid); border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: color 0.2s, background 0.2s; }
+.pw-toggle:hover { color: var(--c-primary); background: color-mix(in srgb, var(--c-primary) 10%, transparent); }
 .settings-field-row input { flex: 1; }
 .settings-field-row button {
   padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
@@ -1011,18 +1016,30 @@ body.focus-mode .month-summary { display: none !important; }
       <div class="settings-field">
         <label>密码</label>
         <div class="settings-field-row">
-          <input type="password" id="settingsPwDisplay" value="••••••••" disabled style="flex:1;">
+          <div class="pw-wrapper" style="flex:1;">
+            <input type="password" id="settingsPwDisplay" value="••••••••" disabled>
+            <button class="pw-toggle" onclick="togglePwVisibility('settingsPwDisplay')" title="显示/隐藏密码"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
           <button class="btn-settings-primary" id="settingsPwBtn" onclick="toggleChangePw()">修改</button>
         </div>
         <div class="settings-pw-row" id="settingsPwRow">
           <div class="settings-field" style="margin-top:8px;">
-            <input type="password" id="settingsOldPw" placeholder="旧密码">
+            <div class="pw-wrapper">
+              <input type="password" id="settingsOldPw" placeholder="旧密码">
+              <button class="pw-toggle" onclick="togglePwVisibility('settingsOldPw')" title="显示/隐藏密码"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
           </div>
           <div class="settings-field">
-            <input type="password" id="settingsNewPw" placeholder="新密码">
+            <div class="pw-wrapper">
+              <input type="password" id="settingsNewPw" placeholder="新密码">
+              <button class="pw-toggle" onclick="togglePwVisibility('settingsNewPw')" title="显示/隐藏密码"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
           </div>
           <div class="settings-field">
-            <input type="password" id="settingsNewPw2" placeholder="确认新密码">
+            <div class="pw-wrapper">
+              <input type="password" id="settingsNewPw2" placeholder="确认新密码">
+              <button class="pw-toggle" onclick="togglePwVisibility('settingsNewPw2')" title="显示/隐藏密码"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
           </div>
           <div class="settings-field-row">
             <button class="btn-settings-primary" onclick="confirmChangePassword()">确认修改</button>
@@ -1809,6 +1826,16 @@ function closeSettings() {
 }
 
 // ═══ 用户名修改 ═══
+function togglePwVisibility(inputId) {
+  var el = document.getElementById(inputId);
+  var btn = el.parentElement.querySelector('.pw-toggle');
+  var isPw = el.type === 'password';
+  el.type = isPw ? 'text' : 'password';
+  btn.innerHTML = isPw
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
 async function saveUsername() {
   var newU = document.getElementById('settingsUsername').value.trim();
   if (!newU) { showToast('用户名不能为空'); return; }

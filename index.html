@@ -420,6 +420,7 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
 .sound-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--c-dark); font-weight: 600; cursor: pointer; user-select: none; background: var(--c-bg-light); border: none; padding: 6px 12px; border-radius: 14px; transition: all 0.2s; }
 .sound-toggle:hover { background: var(--c-bg); }
 .sound-toggle input { accent-color: var(--c-primary); }
+.header-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
 @media (max-width: 700px) {
   .app { flex-direction: column; padding: 12px 8px; gap: 10px; }
@@ -1134,10 +1135,12 @@ body.focus-mode .month-summary { display: none !important; }
       <button class="btn-calendar" id="btnCalendar" onclick="toggleCalendar()">日历</button>
       <span class="date-title" id="dateTitle"></span>
       <span class="date-timer-summary" id="dateTimerSummary"></span>
-      <button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="音效开关">
-        <span id="soundIcon">🔔</span> 音效
-      </button>
-      <button class="btn-calendar" id="btnFocus" onclick="toggleFocusMode()">全屏专注</button>
+      <span class="header-actions">
+        <button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="音效开关">
+          <span id="soundIcon">🔔</span> 音效
+        </button>
+        <button class="btn-calendar" id="btnFocus" onclick="toggleFocusMode()">全屏专注</button>
+      </span>
       <div class="theme-switcher" id="themeSwitcher">
         <div class="theme-dot t-pink active" data-theme="" onclick="setTheme('')" title="粉色"></div>
         <div class="theme-dot t-mint" data-theme="theme-mint" onclick="setTheme('theme-mint')" title="薄荷绿"></div>

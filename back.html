@@ -231,7 +231,22 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .cycle-settings input { width: 44px; border: 2px solid var(--c-bg); border-radius: 8px; padding: 2px 4px; text-align: center; font-size: 11px; color: var(--c-mid-dark); outline: none; }
 .cycle-settings input:focus { border-color: var(--c-accent); }
 
-/* 标签 */
+/* 标签选择器 */
+.tag-selector { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tag-chip { background: var(--c-bg-light); color: var(--c-text-mid); border: 2px solid transparent; padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; user-select: none; }
+.tag-chip:hover { background: var(--c-bg); border-color: var(--c-light); }
+.tag-chip.selected { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; border-color: var(--c-primary); }
+.tag-chip-add { background: none; border: 2px dashed var(--c-bg-mid); color: var(--c-light); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.tag-chip-add:hover { border-color: var(--c-accent); color: var(--c-accent); }
+.tag-input-wrap { display: inline-flex; gap: 4px; align-items: center; }
+.tag-input { border: 2px solid var(--c-accent); border-radius: 14px; padding: 4px 8px; font-size: 12px; width: 72px; outline: none; color: var(--c-text); background: #fff; }
+.tag-input-confirm { background: var(--c-primary); color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 14px; cursor: pointer; line-height: 1; }
+.tag-current { font-size: 11px; color: var(--c-accent); font-weight: 600; padding-left: 4px; }
+body.theme-dark .tag-chip { background: #3a3028; color: #b0a48a; }
+body.theme-dark .tag-chip.selected { background: linear-gradient(135deg, #8b6914, #b8942f); color: #fff; }
+body.theme-dark .tag-chip-add { border-color: #4a4038; color: #8a8068; }
+body.theme-dark .tag-chip-add:hover { border-color: #b8942f; color: #b8942f; }
+body.theme-dark .tag-input { background: #1e1a14; color: #e8dcc8; border-color: #b8942f; }
 
 /* 编辑器 */
 .editor-panel { background: #fff; border-radius: 18px; padding: 14px 20px; box-shadow: 0 4px 20px rgba(255,105,135,0.1); flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -787,6 +802,9 @@ body.focus-mode .month-summary { display: none !important; }
         <button class="preset-btn" onclick="setPreset(60)">60分钟</button>
         <input type="number" class="custom-time" id="customMins" placeholder="自定义" min="1" max="240" onchange="setCustom()">
       </div>
+      <div class="tag-selector" id="tagSelector">
+        <span style="font-size:12px;color:var(--c-light);margin-right:4px">标签</span>
+      </div>
       <div class="timer-progress" id="progressRow">
         <div class="progress-bar-wrap"><div class="progress-bar-inner" id="progressBar"></div></div>
         <span class="timer-session-info" id="sessionInfo"></span>
@@ -1221,6 +1239,79 @@ let currentRound = 0;
 let totalRoundsToday = 0;
 let currentPhase = 'focus'; // 'focus' | 'break'
 
+// 计时标签
+const TAG_STORAGE_KEY = 'timer_tags';
+const DEFAULT_TAGS = ['学习', '工作', '看书', '锻炼', '冥想', '写作'];
+let currentTag = null;
+
+function loadTags() {
+  try { return JSON.parse(localStorage.getItem(TAG_STORAGE_KEY)) || DEFAULT_TAGS.slice(); }
+  catch(e) { return DEFAULT_TAGS.slice(); }
+}
+function saveTags(tags) { try { localStorage.setItem(TAG_STORAGE_KEY, JSON.stringify(tags)); } catch(e) {} }
+
+function renderTags() {
+  const container = document.getElementById('tagSelector');
+  const tags = loadTags();
+  container.querySelectorAll('.tag-chip,.tag-chip-add,.tag-input-wrap').forEach(function(el) { el.remove(); });
+  tags.forEach(function(t) {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip' + (currentTag === t ? ' selected' : '');
+    chip.textContent = t;
+    chip.onclick = function() { selectTag(t); };
+    container.appendChild(chip);
+  });
+  const addBtn = document.createElement('span');
+  addBtn.className = 'tag-chip-add';
+  addBtn.textContent = '+';
+  addBtn.title = '添加自定义标签';
+  addBtn.onclick = function() { showTagInput(); };
+  container.appendChild(addBtn);
+}
+
+function selectTag(tag) {
+  if (currentTag === tag) { currentTag = null; }
+  else { currentTag = tag; }
+  renderTags();
+}
+
+function showTagInput() {
+  const container = document.getElementById('tagSelector');
+  container.querySelectorAll('.tag-chip-add,.tag-input-wrap').forEach(function(el) { el.remove(); });
+  const wrap = document.createElement('span');
+  wrap.className = 'tag-input-wrap';
+  const input = document.createElement('input');
+  input.className = 'tag-input';
+  input.placeholder = '新标签';
+  input.maxLength = 8;
+  const confirm = document.createElement('button');
+  confirm.className = 'tag-input-confirm';
+  confirm.textContent = '\u2713';
+  confirm.onclick = function() {
+    var v = input.value.trim();
+    if (!v) { renderTags(); return; }
+    var tags = loadTags();
+    if (tags.indexOf(v) >= 0) { renderTags(); return; }
+    tags.push(v);
+    saveTags(tags);
+    currentTag = v;
+    renderTags();
+  };
+  input.onkeydown = function(e) { if (e.key === 'Enter') confirm.onclick(); };
+  wrap.appendChild(input);
+  wrap.appendChild(confirm);
+  container.appendChild(wrap);
+  setTimeout(function() { input.focus(); }, 0);
+}
+
+function recordTagTime(entry) {
+  if (!currentTag) return;
+  entry.tags = entry.tags || [];
+  if (entry.tags.indexOf(currentTag) < 0) entry.tags.push(currentTag);
+  entry.tagDurations = entry.tagDurations || {};
+  entry.tagDurations[currentTag] = (entry.tagDurations[currentTag] || 0) + totalElapsed;
+}
+
 // 通知
 let notificationGranted = false;
 
@@ -1554,6 +1645,7 @@ function autoRecord() {
   const entry = entries[currentDate] || { content: '', duration: 0, tags: [], rounds: 0, tagDurations: {} };
   entry.duration = (entry.duration || 0) + totalElapsed;
   entry.rounds = (entry.rounds || 0) + (currentPhase === 'focus' ? 0 : 1);
+  recordTagTime(entry);
   // 记录时间段
   entry.timeBlocks = entry.timeBlocks || [];
   entry.timeBlocks.push({ hour: new Date().getHours(), mins: Math.round(totalElapsed / 60) });
@@ -1583,6 +1675,7 @@ function recordTime() {
   const entries = loadEntries();
   const entry = entries[currentDate] || { content: '', duration: 0, tags: [], rounds: 0, tagDurations: {} };
   entry.duration = (entry.duration || 0) + totalElapsed;
+  recordTagTime(entry);
   entry.timeBlocks = entry.timeBlocks || [];
   entry.timeBlocks.push({ hour: new Date().getHours(), mins: Math.round(totalElapsed / 60) });
   entries[currentDate] = entry;
@@ -1799,6 +1892,7 @@ document.addEventListener('DOMContentLoaded', () => {
   requestAnimationFrame(() => {
     try { switchStatsTab('week'); } catch(e) { console.warn('Stats init deferred:', e); }
   });
+  renderTags();
 });
 
 // ====== 每日模板 ======

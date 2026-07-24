@@ -1373,6 +1373,7 @@ body.focus-mode .month-summary { display: none !important; }
         <div class="export-row" style="margin-top:8px;">
           <button class="btn-backup" id="fullBackupBtn" onclick="exportFullBackup(this)">年度备份同步</button>
           <button class="btn-git-sync" id="gitSyncBtn" onclick="exportMonthlyArchive()">本月备份同步</button>
+          <button class="btn-git-sync" id="exportMonthlyBtn" onclick="exportMonthly()">本月备份导出</button>
         </div>
         <div class="export-row" style="margin-top:10px;">
           <span class="schedule-label">定时备份:</span>
@@ -5546,6 +5547,58 @@ function exportFullBackup(btn) {
       _checkGitSyncBtn();
     }, 2000);
   });
+}
+
+/* 本月备份：导出为本地 JSON 文件下载 */
+function exportMonthly() {
+  var btn = document.getElementById('exportMonthlyBtn');
+  if (!btn) return;
+
+  // 收集当月数据
+  var entries = loadEntries();
+  var monthPrefix = _backupMonthKey();
+  var monthEntries = {};
+  Object.keys(entries || {}).forEach(function(d) {
+    if (d && d.indexOf(monthPrefix) === 0 && entries[d]) {
+      monthEntries[d] = entries[d];
+    }
+  });
+
+  var allLedger = getLedgerData();
+  var monthLedger = (allLedger || []).filter(function(t) {
+    return t && t.date && t.date.indexOf(monthPrefix) === 0;
+  });
+
+  if (Object.keys(monthEntries).length === 0 && monthLedger.length === 0) {
+    showToast('暂无当月数据可导出');
+    return;
+  }
+
+  var data = { entries: monthEntries, ledger: monthLedger, _exportedAt: new Date().toISOString(), _version: 'monthly-export' };
+  var filename = 'backup-' + monthPrefix + '.json';
+
+  btn.classList.add('syncing');
+  btn.textContent = '导出中...';
+  btn.disabled = true;
+
+  try {
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('本月备份已导出: ' + filename);
+  } catch(e) {
+    showToast('导出失败: ' + e.message);
+  }
+
+  btn.classList.remove('syncing');
+  btn.textContent = '本月备份导出';
+  btn.disabled = false;
 }
 
 /* 本月备份：同步当月数据到 GitHub → backup-YYYY-MM.json */

@@ -492,11 +492,42 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .stats-panel { padding: 14px 12px; }
 
   /* 设置面板移动端适配 */
-  .settings-panel { padding: 20px 16px; }
+  .settings-overlay { align-items: flex-start; padding: 6vh 0 10vh 0; }
+  .settings-panel { padding: 20px 16px; max-height: 88vh; }
+  .settings-section { margin-bottom: 16px; }
+  .settings-section h4 { margin-bottom: 8px; }
+  .settings-header { margin-bottom: 16px; }
+  .settings-header h3 { font-size: 16px; }
+  .settings-close { font-size: 20px; }
   .token-display-row { gap: 4px; }
   .token-eye-btn { padding: 6px 6px; }
-  .token-copy-btn { padding: 6px 6px; }
-  .btn-settings-inline { padding: 6px 8px; }
+  .token-copy-btn { padding: 6px 6px; font-size: 11px; }
+  .btn-settings-inline { padding: 6px 8px; font-size: 11px; }
+  #tokenEditRow { flex-wrap: wrap !important; gap: 6px; }
+  #tokenEditRow .token-edit { flex: 1 1 100%; min-width: 0; }
+  #tokenEditRow button { flex: 1 1 auto; }
+}
+
+/* ── 超小屏适配 (≤400px) ── */
+@media (max-width: 400px) {
+  .settings-overlay { padding: 4vh 0 12vh 0; }
+  .settings-panel { padding: 16px 12px; border-radius: 12px; max-height: 92vh; }
+  .settings-section { margin-bottom: 12px; }
+  .settings-section h4 { font-size: 11px; margin-bottom: 6px; }
+  .settings-header { margin-bottom: 12px; }
+  .settings-header h3 { font-size: 15px; }
+  .settings-field { margin-bottom: 8px; }
+  .settings-field label { font-size: 11px; }
+  .settings-field-row { flex-wrap: wrap; gap: 6px; }
+  .settings-field-row input { flex: 1 1 100%; min-height: 44px; }
+  .settings-field-row button { flex: 1 1 auto; min-height: 44px; }
+  .token-display-row { gap: 3px; }
+  .token-eye-btn { padding: 5px 5px; min-height: 36px; min-width: 36px; }
+  .token-copy-btn { padding: 5px 6px; font-size: 11px; }
+  .btn-settings-inline { padding: 5px 7px; font-size: 11px; }
+  .settings-field input[type="text"],
+  .settings-field input[type="password"] { font-size: 12px; min-height: 42px; }
+  .btn-settings-danger { font-size: 12px; padding: 12px 10px; }
 }
 
 /* ── 记账面板 ── */
@@ -831,6 +862,7 @@ body.focus-mode .month-summary { display: none !important; }
   background: rgba(0,0,0,0.45); backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   justify-content: center; align-items: center;
+  overflow-y: auto; overscroll-behavior: contain;
 }
 .settings-overlay.open { display: flex; }
 .settings-panel {

@@ -5908,9 +5908,9 @@ function onScheduleModeChange() {
   document.getElementById('scheduleDayGroup').style.display = mode === 'monthly' ? '' : 'none';
 }
 
-function initScheduleUI() {
+function initScheduleUI(skipRemote) {
   var cfg = loadScheduleConfig();
-  if (!cfg) {
+  if (!cfg && !skipRemote) {
     _restoreScheduleRemote().then(function(remoteCfg) {
       if (remoteCfg) { saveScheduleConfig(remoteCfg); initScheduleUI(); }
     }).catch(function(){});
@@ -5976,7 +5976,7 @@ function toggleSchedule() {
     _clearScheduleRemote();
     stopScheduleTimer();
     showToast('定时备份已停止');
-    initScheduleUI();
+    initScheduleUI(true);
   } else {
     var mode = document.getElementById('scheduleMode').value;
     var time = document.getElementById('scheduleTime').value || '00:00';

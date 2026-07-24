@@ -365,6 +365,7 @@ body.focus-mode .sidebar,
 body.focus-mode .editor-panel,
 body.focus-mode .stats-panel,
 body.focus-mode .date-header,
+body.focus-mode .plan-card,
 body.focus-mode .preset-row,
 body.focus-mode .timer-row:has(.timer-controls) .cycle-indicator,
 body.focus-mode .timer-row:has(.timer-controls) .timer-controls,
@@ -466,7 +467,7 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
   .cycle-settings { flex-wrap: wrap; gap: 4px; }
   .theme-switcher { gap: 4px; }
   .theme-dot { width: 28px; height: 28px; }
-  .focus-exit-btn { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .focus-exit-btn { top: auto; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); padding: 8px 16px; font-size: 12px; }
   .focus-hint { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
   .countdown-overlay .cd-label { font-size: 18px; }
   .countdown-overlay .cd-number { font-size: 72px; }

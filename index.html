@@ -3263,6 +3263,10 @@ let currentStatsTab = 'week';
   statsCanvas.parentElement.appendChild(tip);
 
   statsCanvas.addEventListener('mousemove', function(e) {
+    // 心情曲线和支出趋势图不显示柱状图悬浮提示
+    if (currentStatsTab === 'mood' || currentStatsTab === 'ledgerTrend') {
+      tip.style.display = 'none'; statsCanvas.style.cursor = ''; return;
+    }
     const rects = window._barRects;
     if (!rects || !rects.length) { tip.style.display = 'none'; statsCanvas.style.cursor = ''; return; }
 

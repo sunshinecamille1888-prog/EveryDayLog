@@ -5765,6 +5765,64 @@ function loadScheduleConfig() {
 function saveScheduleConfig(cfg) { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(cfg)); } catch(e) {} }
 function clearScheduleConfig() { try { localStorage.removeItem(SCHEDULE_KEY); } catch(e) {} }
 
+/* 将 schedule 配置同步到 GitHub auth.json */
+async function _saveScheduleRemote(cfg) {
+  try {
+    var tok = _getGitToken(); if (!tok) return;
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) return;
+    var remote = await res.json();
+    remote.schedule = cfg;
+    var contentB64 = _strToB64(JSON.stringify(remote));
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
+      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
+    } catch(e) {}
+    var putBody = { message: 'update schedule config', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+  } catch(e) {}
+}
+
+/* 清除 GitHub auth.json 中的 schedule 字段 */
+async function _clearScheduleRemote() {
+  try {
+    var tok = _getGitToken(); if (!tok) return;
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) return;
+    var remote = await res.json();
+    if (!remote.schedule) return;
+    delete remote.schedule;
+    var contentB64 = _strToB64(JSON.stringify(remote));
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, { headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' } });
+      if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; }
+    } catch(e) {}
+    var putBody = { message: 'clear schedule config', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+  } catch(e) {}
+}
+
+/* 从 GitHub auth.json 恢复 schedule 配置 */
+async function _restoreScheduleRemote() {
+  try {
+    var tok = _getGitToken(); if (!tok) return null;
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) return null;
+    var remote = await res.json();
+    return remote.schedule || null;
+  } catch(e) { return null; }
+}
+
 /* 计算距离下一个指定时刻的毫秒数（每天） */
 function msUntilNextDaily(timeStr) {
   var parts = timeStr.split(':');
@@ -5835,6 +5893,12 @@ function onScheduleModeChange() {
 
 function initScheduleUI() {
   var cfg = loadScheduleConfig();
+  if (!cfg) {
+    _restoreScheduleRemote().then(function(remoteCfg) {
+      if (remoteCfg) { saveScheduleConfig(remoteCfg); initScheduleUI(); }
+    }).catch(function(){});
+    return;
+  }
   var status = document.getElementById('scheduleStatus');
   var modeEl = document.getElementById('scheduleMode');
   var dayEl = document.getElementById('scheduleDay');
@@ -5868,6 +5932,7 @@ function toggleSchedule() {
   var cfg = loadScheduleConfig();
   if (cfg) {
     clearScheduleConfig();
+    _clearScheduleRemote();
     stopScheduleTimer();
     showToast('定时备份已停止');
     initScheduleUI();
@@ -5892,6 +5957,7 @@ function toggleSchedule() {
       showToast('定时备份已启动 · 每月' + day + '号 ' + time);
     }
     saveScheduleConfig(newCfg);
+    _saveScheduleRemote(newCfg);
     initScheduleUI();
   }
 }

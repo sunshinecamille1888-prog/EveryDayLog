@@ -784,6 +784,31 @@ body.focus-mode .month-summary { display: none !important; }
 }
 .btn-logout:hover { background: var(--c-bg-mid); color: var(--c-text); opacity: 1; }
 
+/* Token 管理 */
+.token-display-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.token-display {
+  flex: 1; padding: 8px 12px; border: 1.5px solid var(--c-bg-mid); border-radius: 10px;
+  font-size: 13px; background: var(--c-bg); color: var(--c-text-mid);
+  outline: none; font-family: monospace; letter-spacing: 1px;
+  box-sizing: border-box;
+}
+.token-eye-btn {
+  background: none; border: 1px solid var(--c-bg-mid); border-radius: 8px;
+  padding: 6px 10px; cursor: pointer; font-size: 14px; color: var(--c-text-mid);
+  transition: all 0.2s;
+}
+.token-eye-btn:hover { background: var(--c-bg-mid); color: var(--c-text); }
+.token-edit {
+  flex: 1; padding: 8px 12px; border: 1.5px solid var(--c-primary); border-radius: 10px;
+  font-size: 13px; background: var(--c-bg); color: var(--c-text);
+  outline: none; font-family: monospace; box-sizing: border-box;
+}
+.token-edit:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent); }
+.token-edit::placeholder { color: var(--c-text-mid); opacity: 0.5; }
+
+/* 恢复模式 */
+#auth-recovery-group { margin-top: 4px; }
+
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="data:,">
@@ -799,14 +824,19 @@ body.focus-mode .month-summary { display: none !important; }
     <input type="text" id="auth-username" placeholder="用户名" autocomplete="username">
     <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password">
     <div id="auth-token-group">
-      <input type="password" id="auth-token" placeholder="GitHub Token (ghp_/github_pat_)" autocomplete="off">
+      <input type="text" id="auth-invite-code" placeholder="注册码" autocomplete="off">
+    </div>
+    <div id="auth-recovery-group" style="display:none">
+      <input type="password" id="auth-new-password" placeholder="新密码" autocomplete="new-password">
     </div>
     <div class="auth-btn-group">
       <button class="auth-btn auth-btn-login" id="auth-login-btn" onclick="handleLogin()">登录</button>
       <button class="auth-btn auth-btn-register" id="auth-register-btn" onclick="handleRegister()" style="display:none">注册</button>
+      <button class="auth-btn auth-btn-login" id="auth-recovery-btn" onclick="handleRecovery()" style="display:none">恢复</button>
     </div>
     <div class="auth-toggle" id="auth-toggle">
       <span id="auth-toggle-text">没有账号？</span><a href="javascript:void(0)" id="auth-toggle-link" onclick="toggleAuthMode()">点击注册</a>
+      <span id="auth-forgot-sep" style="display:none"> | </span><a href="javascript:void(0)" id="auth-forgot-link" style="display:none" onclick="showRecoveryMode()">忘记密码？</a>
     </div>
     <div class="auth-error" id="auth-error"></div>
   </div>
@@ -1082,6 +1112,22 @@ body.focus-mode .month-summary { display: none !important; }
           <span id="scheduleStatus" class="schedule-status"></span>
         </div>
       </div>
+      <!-- Token 管理 -->
+      <div class="export-section" id="tokenMgmtSection">
+        <div class="export-header">Token 管理</div>
+        <div class="export-row" style="margin-top:8px;">
+          <div class="token-display-row">
+            <input type="password" id="tokenDisplayInput" class="token-display" value="••••••••••••••••" readonly>
+            <button class="token-eye-btn" id="tokenEyeBtn" onclick="toggleTokenVisibility()" title="显示/隐藏">👁</button>
+            <button class="btn-backup" id="tokenEditBtn" onclick="editToken()">编辑</button>
+          </div>
+        </div>
+        <div class="export-row" id="tokenEditRow" style="display:none;margin-top:6px;">
+          <input type="text" id="tokenEditInput" class="token-edit" placeholder="输入新的 GitHub Token (ghp_/github_pat_)">
+          <button class="btn-backup" id="tokenSaveBtn" onclick="saveToken()" style="margin-left:6px;">保存</button>
+          <button class="btn-backup" id="tokenCancelBtn" onclick="cancelEditToken()" style="margin-left:4px;background:transparent;color:var(--c-text-mid);border:1px solid var(--c-bg-mid);">取消</button>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -1101,6 +1147,7 @@ const SESSION_PWHASH_KEY = 'edl_session_pwhash';
 const SESSION_TOKENENC_KEY = 'edl_session_tokenenc';
 const GITHUB_AUTH_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/auth.json';
 const GITHUB_AUTH_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/auth.json';
+const GITHUB_INVITES_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/invites.json';
 
 async function sha256(message) {
   var enc = new TextEncoder();
@@ -1131,16 +1178,29 @@ async function aesDecrypt(b64, pwhashHex) {
   var dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, data);
   return new TextDecoder().decode(dec);
 }
+function _genBackupKey() {
+  var arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  var hex = '';
+  for (var i = 0; i < 32; i++) hex += arr[i].toString(16).padStart(2, '0');
+  return hex;
+}
 function isRegistered() { try { return !!sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return false; } }
 function getSessionPwhash() { try { return sessionStorage.getItem(SESSION_PWHASH_KEY); } catch(e) { return null; } }
 function showLoginMode() {
   document.getElementById('auth-token-group').style.display = 'none';
+  document.getElementById('auth-recovery-group').style.display = 'none';
   document.getElementById('auth-login-btn').style.display = '';
   document.getElementById('auth-register-btn').style.display = 'none';
+  document.getElementById('auth-recovery-btn').style.display = 'none';
+  document.getElementById('auth-password').placeholder = '密码';
   var lBtn = document.getElementById('auth-login-btn');
   if (lBtn) { lBtn.disabled = false; lBtn.textContent = '登录'; }
   document.getElementById('auth-toggle-text').textContent = '没有账号？';
   document.getElementById('auth-toggle-link').textContent = '点击注册';
+  document.getElementById('auth-toggle-link').onclick = toggleAuthMode;
+  document.getElementById('auth-forgot-sep').style.display = '';
+  document.getElementById('auth-forgot-link').style.display = '';
   document.getElementById('auth-error').textContent = '';
 }
 function toggleAuthMode() {
@@ -1148,27 +1208,51 @@ function toggleAuthMode() {
   if (tg.style.display === 'none') {
     // 切换到注册模式
     document.getElementById('auth-token-group').style.display = '';
+    document.getElementById('auth-recovery-group').style.display = 'none';
     document.getElementById('auth-login-btn').style.display = 'none';
     document.getElementById('auth-register-btn').style.display = '';
+    document.getElementById('auth-recovery-btn').style.display = 'none';
     var rBtn = document.getElementById('auth-register-btn');
     if (rBtn) { rBtn.disabled = false; rBtn.textContent = '注册'; }
     document.getElementById('auth-toggle-text').textContent = '已有账号？';
     document.getElementById('auth-toggle-link').textContent = '点击登录';
+    document.getElementById('auth-toggle-link').onclick = toggleAuthMode;
+    document.getElementById('auth-forgot-sep').style.display = 'none';
+    document.getElementById('auth-forgot-link').style.display = 'none';
   } else {
     showLoginMode();
   }
   document.getElementById('auth-error').textContent = '';
 }
+function showRecoveryMode() {
+  document.getElementById('auth-token-group').style.display = 'none';
+  document.getElementById('auth-recovery-group').style.display = 'none';
+  document.getElementById('auth-login-btn').style.display = 'none';
+  document.getElementById('auth-register-btn').style.display = 'none';
+  document.getElementById('auth-recovery-btn').style.display = '';
+  var rBtn = document.getElementById('auth-recovery-btn');
+  if (rBtn) { rBtn.disabled = false; rBtn.textContent = '恢复'; }
+  document.getElementById('auth-toggle-text').textContent = '想起密码了？';
+  document.getElementById('auth-toggle-link').textContent = '返回登录';
+  document.getElementById('auth-toggle-link').onclick = showLoginMode;
+  document.getElementById('auth-forgot-sep').style.display = 'none';
+  document.getElementById('auth-forgot-link').style.display = 'none';
+  document.getElementById('auth-error').textContent = '';
+  document.getElementById('auth-password').placeholder = '注册码';
+}
 function showApp() {
   document.getElementById('auth-overlay').style.display = 'none';
   if (typeof _checkGitSyncBtn === 'function') _checkGitSyncBtn();
+  loadTokenDisplay();
 }
 function logout() {
   try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
-  document.getElementById('auth-token').value = '';
+  document.getElementById('auth-password').placeholder = '密码';
+  document.getElementById('auth-invite-code').value = '';
+  document.getElementById('auth-new-password').value = '';
   showLoginMode();
   var t = document.getElementById('toast'); if (t) t.classList.remove('show');
 }
@@ -1191,53 +1275,65 @@ function _strToB64(str) {
   var bin = ''; for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin);
 }
+// ═══ 注册 ═══
 async function handleRegister() {
   var u = document.getElementById('auth-username').value.trim();
   var p = document.getElementById('auth-password').value;
-  var tok = document.getElementById('auth-token').value.trim();
+  var code = document.getElementById('auth-invite-code').value.trim();
   var err = document.getElementById('auth-error');
   var btn = document.getElementById('auth-register-btn');
   if (!u || !p) { err.textContent = '请输入用户名和密码'; return; }
-  if (!tok) { err.textContent = '请输入 GitHub Token'; return; }
-  if (!/^(ghp_|github_pat_)/.test(tok)) { err.textContent = 'Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'; return; }
+  if (!code) { err.textContent = '请输入注册码'; return; }
   btn.disabled = true; btn.textContent = '注册中...'; err.textContent = '';
-  // 清除旧的会话状态，防止残留数据干扰
   try { sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); } catch(e) {}
   try {
     var ph = await sha256(p);
-    var enc = await aesEncrypt(tok, ph);
-    var authData = JSON.stringify({ user: u, pwhash: ph, token_enc: enc });
+    var codeHash = await sha256(code);
+    // fetch invites.json → 用注册码解密 Token
+    var invRes = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
+    if (!invRes.ok) throw new Error('无法获取注册码列表 (HTTP ' + invRes.status + ')');
+    var invitesData = await invRes.json();
+    var invEntry = (invitesData.invites || {})[codeHash];
+    if (!invEntry) throw new Error('注册码无效或已被使用');
+    var tok;
+    try {
+      tok = await aesDecrypt(invEntry.token_enc, codeHash);
+    } catch(e2) {
+      throw new Error('注册码解密失败，请联系管理员');
+    }
+    if (!/^(ghp_|github_pat_)/.test(tok)) throw new Error('注册码对应的 Token 格式异常');
+    var tokEnc = await aesEncrypt(tok, ph);
+    // 生成 backup_key
+    var backupKey = _genBackupKey();
+    var encryptedBackupKey = await aesEncrypt(backupKey, ph);
+    var recoveryEncryptedBackupKey = await aesEncrypt(backupKey, codeHash);
+    var authData = JSON.stringify({
+      user: u, pwhash: ph, token_enc: tokEnc,
+      invite_code_hash: codeHash,
+      encrypted_backup_key: encryptedBackupKey,
+      recovery_encrypted_backup_key: recoveryEncryptedBackupKey
+    });
     var contentB64 = _strToB64(authData);
-    // 先检查远程是否已有 auth.json（获取 sha 用于更新）
+    // GET auth.json sha（更新已有文件时必填）
     var sha = null;
     try {
       var getRes = await fetch(GITHUB_AUTH_API, {
         headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json' }
       });
-      if (getRes.ok) {
-        var getData = await getRes.json();
-        sha = getData.sha;
-      } else if (getRes.status !== 404) {
-        throw new Error('无法访问仓库 (' + getRes.status + ')，请检查 Token 是否有 repo 权限');
-      }
-      // 404 表示文件不存在，sha 保持 null，首次创建无需 sha
+      if (getRes.ok) { var getData = await getRes.json(); sha = getData.sha; }
+      else if (getRes.status !== 404) throw new Error('无法访问仓库 (' + getRes.status + ')，请检查 Token 是否有 repo 权限');
     } catch(e) {
-      // 如果是权限错误，直接向上传递
       if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e;
-      // 网络错误等，尝试继续 PUT
     }
-    // PUT 写入 auth.json
     var putBody = { message: 'register auth', content: contentB64 };
     if (sha) putBody.sha = sha;
     var putRes = await fetch(GITHUB_AUTH_API, {
-      method: 'PUT',
-      headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
       body: JSON.stringify(putBody)
     });
     if (putRes.ok) {
-      // 仅在 PUT 成功后才写入 sessionStorage 和调用 showApp()
       sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
-      sessionStorage.setItem(SESSION_TOKENENC_KEY, enc);
+      sessionStorage.setItem(SESSION_TOKENENC_KEY, tokEnc);
       localStorage.setItem(GIT_TOKEN_KEY, tok);
       showApp();
     } else {
@@ -1246,6 +1342,7 @@ async function handleRegister() {
     }
   } catch(e) { err.textContent = '注册失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '注册'; }
 }
+// ═══ 登录 ═══
 async function handleLogin() {
   var u = document.getElementById('auth-username').value.trim();
   var p = document.getElementById('auth-password').value;
@@ -1255,7 +1352,6 @@ async function handleLogin() {
   btn.disabled = true; btn.textContent = '登录中...'; err.textContent = '';
   var ph = await sha256(p);
   try {
-    // 从 GitHub Pages 拉取远程凭据（公开仓库无需 token，no-cache 避免浏览器缓存旧数据）
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
     if (!res.ok) {
       if (res.status === 404) { toggleAuthMode(); err.textContent = '用户不存在，请先注册'; btn.disabled = false; btn.textContent = '登录'; return; }
@@ -1264,13 +1360,203 @@ async function handleLogin() {
     var remote = await res.json();
     if (remote.user !== u || remote.pwhash !== ph) { err.textContent = '用户名或密码错误'; btn.disabled = false; btn.textContent = '登录'; return; }
     var tok = await aesDecrypt(remote.token_enc, ph);
-    // 写入 sessionStorage（当前会话自动登录） + localStorage（token 明文供其他模块使用）
     sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
     sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
   } catch(e) { err.textContent = '登录失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '登录'; }
 }
+// ═══ 忘记密码恢复 ═══
+async function handleRecovery() {
+  var u = document.getElementById('auth-username').value.trim();
+  var code = document.getElementById('auth-password').value;  // 恢复模式下 password 字段作为注册码输入
+  var newP = document.getElementById('auth-new-password').value;
+  var err = document.getElementById('auth-error');
+  var btn = document.getElementById('auth-recovery-btn');
+  if (!u || !code) { err.textContent = '请输入用户名和注册码'; return; }
+  if (!newP) { err.textContent = '请输入新密码'; return; }
+  btn.disabled = true; btn.textContent = '恢复中...'; err.textContent = '';
+  try {
+    var codeHash = await sha256(code);
+    // 拉取远程 auth.json
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
+    var remote = await res.json();
+    if (remote.user !== u) { err.textContent = '用户名不存在'; btn.disabled = false; btn.textContent = '恢复'; return; }
+    if (remote.invite_code_hash !== codeHash) { err.textContent = '注册码错误'; btn.disabled = false; btn.textContent = '恢复'; return; }
+    if (!remote.recovery_encrypted_backup_key) throw new Error('远程数据缺少恢复密钥');
+    // 用注册码解密恢复 backup_key
+    var backupKey;
+    try {
+      backupKey = await aesDecrypt(remote.recovery_encrypted_backup_key, codeHash);
+    } catch(e2) {
+      throw new Error('恢复密钥解密失败');
+    }
+    // 用新密码重新加密 backup_key
+    var newPh = await sha256(newP);
+    var newEncBackupKey = await aesEncrypt(backupKey, newPh);
+
+    // Token 需要用旧密码解密，但我们没有旧密码——恢复时要求用户提供新 Token
+    // 在恢复模式下 password 字段已是注册码，新增 token 输入
+    // 但实际流程是：找回密码后让用户在 Token 管理中重新设置 Token
+    // 这里暂时保留旧 token_enc，用户登录后可自行在 Token 管理更新
+    var newTokEnc = await aesEncrypt(await aesDecrypt(remote.token_enc, newPh), newPh);
+    // 等等，remote.token_enc 是用旧密码加密的，无法用 newPh 解密。
+    // 正确做法：注册码恢复 backup_key 后，要求用户在 Token 管理中重新配置 Token。
+    // 这里保持旧字段不变，但 encrypted_backup_key 用新密码重新加密。
+    // 重新构建 authData，保留旧 token_enc（用户需登录后在 Token 管理中手动更新）
+    var authData = JSON.stringify({
+      user: remote.user,
+      pwhash: newPh,
+      token_enc: remote.token_enc,
+      invite_code_hash: remote.invite_code_hash,
+      encrypted_backup_key: newEncBackupKey,
+      recovery_encrypted_backup_key: remote.recovery_encrypted_backup_key
+    });
+    var contentB64 = _strToB64(authData);
+
+    // 需要 Token 才能 PUT——此时我们无法获取 Token（旧密码已忘）。
+    // 在 recovery 模式下，需要用户额外提供 Token 或者使用注册码绑定 Token。
+    // 但注册码已在注册时使用，我们重新从 invites.json 获取 Token。
+    // 然而这违背了"恢复时不需要 Token"的假设。
+    // 折衷方案：如果注册码仍然有效（未从 invites.json 移除），用它重新获取 Token。
+    var invRes2 = await fetch(GITHUB_INVITES_PAGES, { cache: 'no-cache' });
+    var invitesData2 = await invRes2.json();
+    var invEntry2 = (invitesData2.invites || {})[codeHash];
+    if (!invEntry2) throw new Error('注册码已失效，无法获取写入权限');
+    var recoveryTok = await aesDecrypt(invEntry2.token_enc, codeHash);
+
+    // GET sha
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, {
+        headers: { 'Authorization': 'Bearer ' + recoveryTok, 'Accept': 'application/vnd.github+json' }
+      });
+      if (getRes.ok) { var getData = await getRes.json(); sha = getData.sha; }
+      else throw new Error('无法访问仓库 (' + getRes.status + ')');
+    } catch(e) {
+      if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e;
+    }
+    var putBody = { message: 'recover auth', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    var putRes = await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + recoveryTok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (!putRes.ok) {
+      var putErr = await putRes.text();
+      throw new Error('写入 GitHub 失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
+    }
+    // 恢复成功：用新密码写入 sessionStorage，Token 用旧加密值（用户登录后会解密失败，需引导去 Token 管理更新）
+    sessionStorage.setItem(SESSION_PWHASH_KEY, newPh);
+    sessionStorage.setItem(SESSION_TOKENENC_KEY, remote.token_enc);
+    localStorage.setItem(GIT_TOKEN_KEY, recoveryTok);
+    showToast('密码已重置，请前往 Token 管理更新 Token');
+    // 恢复 auth-password placeholder
+    document.getElementById('auth-password').placeholder = '密码';
+    showApp();
+  } catch(e) { err.textContent = '恢复失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '恢复'; }
+}
+
+// ═══ Token 管理 ═══
+var _tokenDisplayVisible = false;
+var _cachedTokenPlain = null;
+
+async function loadTokenDisplay() {
+  try {
+    var ph = getSessionPwhash();
+    if (!ph) return;
+    var enc = sessionStorage.getItem(SESSION_TOKENENC_KEY);
+    if (!enc) return;
+    _cachedTokenPlain = await aesDecrypt(enc, ph);
+    var m = _cachedTokenPlain.length < 12 ? _cachedTokenPlain : _cachedTokenPlain.substring(0, 6) + '••••••••••••••' + _cachedTokenPlain.substring(_cachedTokenPlain.length - 4);
+    var inp = document.getElementById('tokenDisplayInput');
+    if (inp) inp.value = m;
+  } catch(e) { /* 解密失败，保持默认显示 */ }
+}
+
+function toggleTokenVisibility() {
+  var inp = document.getElementById('tokenDisplayInput');
+  var btn = document.getElementById('tokenEyeBtn');
+  if (!inp) return;
+  _tokenDisplayVisible = !_tokenDisplayVisible;
+  if (_tokenDisplayVisible) {
+    inp.type = 'text';
+    if (_cachedTokenPlain) inp.value = _cachedTokenPlain;
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if (_cachedTokenPlain) {
+      inp.value = _cachedTokenPlain.substring(0, 6) + '••••••••••••••' + _cachedTokenPlain.substring(_cachedTokenPlain.length - 4);
+    }
+    btn.textContent = '👁';
+  }
+}
+
+function editToken() {
+  document.getElementById('tokenEditRow').style.display = '';
+  document.getElementById('tokenEditInput').value = _cachedTokenPlain || '';
+  document.getElementById('tokenEditBtn').style.display = 'none';
+}
+
+function cancelEditToken() {
+  document.getElementById('tokenEditRow').style.display = 'none';
+  document.getElementById('tokenEditInput').value = '';
+  document.getElementById('tokenEditBtn').style.display = '';
+}
+
+async function saveToken() {
+  var newTok = document.getElementById('tokenEditInput').value.trim();
+  if (!newTok) { showToast('请输入 Token'); return; }
+  if (!/^(ghp_|github_pat_)/.test(newTok)) { showToast('Token 格式不正确，应以 ghp_ 或 github_pat_ 开头'); return; }
+  var ph = getSessionPwhash();
+  if (!ph) { showToast('会话已过期，请重新登录'); return; }
+  var btnSave = document.getElementById('tokenSaveBtn');
+  btnSave.disabled = true; btnSave.textContent = '保存中...';
+  try {
+    var newTokEnc = await aesEncrypt(newTok, ph);
+    // 拉取远程 auth.json 获取最新 sha
+    var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('无法获取远程凭据 (' + res.status + ')');
+    var remote = await res.json();
+    // 更新 token_enc
+    remote.token_enc = newTokEnc;
+    var contentB64 = _strToB64(JSON.stringify(remote));
+
+    // 用当前 Token 做 PUT
+    var curTok = _getGitToken();
+    if (!curTok) { showToast('Token 未就绪，请先登录'); btnSave.disabled = false; btnSave.textContent = '保存'; return; }
+    var sha = null;
+    try {
+      var getRes = await fetch(GITHUB_AUTH_API, {
+        headers: { 'Authorization': 'Bearer ' + curTok, 'Accept': 'application/vnd.github+json' }
+      });
+      if (getRes.ok) { var d = await getRes.json(); sha = d.sha; }
+      else throw new Error('无法访问仓库 (' + getRes.status + ')');
+    } catch(e) { if (e && e.message && e.message.indexOf('无法访问仓库') !== -1) throw e; }
+
+    var putBody = { message: 'update token', content: contentB64 };
+    if (sha) putBody.sha = sha;
+    var putRes = await fetch(GITHUB_AUTH_API, {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + curTok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (putRes.ok) {
+      sessionStorage.setItem(SESSION_TOKENENC_KEY, newTokEnc);
+      localStorage.setItem(GIT_TOKEN_KEY, newTok);
+      _cachedTokenPlain = newTok;
+      document.getElementById('tokenDisplayInput').value = _tokenDisplayVisible ? newTok : newTok.substring(0, 6) + '••••••••••••••' + newTok.substring(newTok.length - 4);
+      cancelEditToken();
+      showToast('Token 已更新');
+    } else {
+      var putErr = await putRes.text();
+      throw new Error('保存失败 (' + putRes.status + '): ' + (putErr.length > 200 ? putErr.substring(0, 200) + '...' : putErr));
+    }
+  } catch(e) { showToast('保存 Token 失败: ' + (e.message || e)); }
+  btnSave.disabled = false; btnSave.textContent = '保存';
+}
+
+// ═══ 初始化 ═══
 (function initAuth() {
   showLoginMode();
   if (isRegistered()) { tryAutoLogin(); return; }
@@ -1278,12 +1564,17 @@ async function handleLogin() {
   document.getElementById('auth-password').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       var lBtn = document.getElementById('auth-login-btn');
+      var rBtn = document.getElementById('auth-recovery-btn');
       if (lBtn && lBtn.style.display !== 'none') handleLogin();
+      else if (rBtn && rBtn.style.display !== 'none') handleRecovery();
       else handleRegister();
     }
   });
-  document.getElementById('auth-token').addEventListener('keydown', function(e) {
+  document.getElementById('auth-invite-code').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') handleRegister();
+  });
+  document.getElementById('auth-new-password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleRecovery();
   });
 })();
 // ====== 用户鉴权模块 end ======

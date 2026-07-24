@@ -2075,6 +2075,18 @@ async function saveInviteCode() {
     if (e.key === 'Enter') handleRecovery();
   });
 })();
+// 全局鉴权守卫：缓存清除后拦截所有点击，跳转登录
+document.addEventListener('click', function(e) {
+  if (isRegistered()) return;
+  var o = document.getElementById('auth-overlay');
+  if (o && o.style.display !== 'none') return;
+  if (e.target.closest('#auth-overlay')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+  o.style.display = '';
+  showLoginMode();
+}, true);
 // ====== 用户鉴权模块 end ======
 
 const STORAGE_KEY = 'daily_doc_entries';

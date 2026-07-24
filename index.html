@@ -1340,7 +1340,7 @@ body.focus-mode .month-summary { display: none !important; }
           <span id="scheduleTimeGroup">
             <input type="time" id="scheduleTime" value="00:00" class="schedule-input" style="width:auto;min-width:70px">
           </span>
-          <button id="scheduleBtn" class="btn-schedule" onclick="toggleSchedule()">启动定时备份</button>
+          <button id="scheduleBtn" class="btn-schedule" onclick="exportFullBackup()">启动定时备份</button>
           <span id="scheduleStatus" class="schedule-status"></span>
         </div>
       </div>
@@ -5533,12 +5533,11 @@ function onScheduleModeChange() {
 
 function initScheduleUI() {
   var cfg = loadScheduleConfig();
-  var btn = document.getElementById('scheduleBtn');
   var status = document.getElementById('scheduleStatus');
   var modeEl = document.getElementById('scheduleMode');
   var dayEl = document.getElementById('scheduleDay');
   var timeEl = document.getElementById('scheduleTime');
-  if (!btn || !status) return;
+  if (!status) return;
 
   if (cfg) {
     modeEl.value = cfg.type;
@@ -5546,8 +5545,6 @@ function initScheduleUI() {
     onScheduleModeChange();
     timeEl.value = cfg.time;
     timeEl.disabled = true;
-    btn.textContent = '停止定时备份';
-    btn.classList.add('stop');
     if (cfg.type === 'daily') {
       status.textContent = '运行中 · 每天 ' + cfg.time;
     } else {
@@ -5561,8 +5558,6 @@ function initScheduleUI() {
     modeEl.disabled = false;
     dayEl.disabled = false;
     timeEl.disabled = false;
-    btn.textContent = '启动定时备份';
-    btn.classList.remove('stop');
     status.textContent = '';
   }
 }

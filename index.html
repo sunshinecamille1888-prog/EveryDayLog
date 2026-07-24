@@ -5815,7 +5815,6 @@ async function _clearScheduleRemote() {
 /* 从 GitHub auth.json 恢复 schedule 配置 */
 async function _restoreScheduleRemote() {
   try {
-    var tok = _getGitToken(); if (!tok) return null;
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
     if (!res.ok) return null;
     var remote = await res.json();

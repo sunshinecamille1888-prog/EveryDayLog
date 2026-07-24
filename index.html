@@ -422,6 +422,8 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
 .sound-toggle input { accent-color: var(--c-primary); }
 .header-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
+.sync-btn-mobile { display: none; }
+
 @media (max-width: 700px) {
   .app { flex-direction: column; padding: 12px 8px; gap: 10px; }
   .sidebar:not(.show) { height: 0; flex-shrink: 1; }
@@ -745,8 +747,7 @@ body.focus-mode .month-summary { display: none !important; }
 .sync-dot::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #333; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
 .sync-dot:hover::after { opacity: 1; }
 
-/* 移动端导入备份按钮（桌面端隐藏） */
-.sync-btn-mobile { display: none; }
+/* 移动端导入备份按钮状态色 */
 .sync-btn-mobile.synced { background: #4caf50; color: #fff; border-color: #4caf50; }
 .sync-btn-mobile.syncing { background: #ff9800; color: #fff; border-color: #ff9800; }
 .sync-btn-mobile.error { background: #f44336; color: #fff; border-color: #f44336; }

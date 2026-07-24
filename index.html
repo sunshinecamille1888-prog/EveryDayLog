@@ -1385,7 +1385,7 @@ body.focus-mode .month-summary { display: none !important; }
           <span id="scheduleTimeGroup">
             <input type="time" id="scheduleTime" value="00:00" class="schedule-input" style="width:auto;min-width:70px">
           </span>
-          <button id="scheduleBtn" class="btn-schedule" onclick="exportFullBackup(this)">启动定时备份</button>
+          <button id="scheduleBtn" class="btn-schedule" onclick="toggleSchedule()">启动定时备份</button>
           <span id="scheduleStatus" class="schedule-status"></span>
         </div>
       </div>
@@ -5728,12 +5728,12 @@ function startScheduleTimer(cfg) {
     var day = cfg.day || 1;
     function scheduleNext() {
       _scheduleTimer = setTimeout(function() {
-        exportMonthlyArchive();
+        exportFullBackup();
         scheduleNext();
       }, msUntilNextMonthly(day, cfg.time));
     }
     _scheduleTimer = setTimeout(function() {
-      exportMonthlyArchive();
+      exportFullBackup();
       scheduleNext();
     }, msUntilNextMonthly(day, cfg.time));
   }
@@ -5789,6 +5789,14 @@ function toggleSchedule() {
   } else {
     var mode = document.getElementById('scheduleMode').value;
     var time = document.getElementById('scheduleTime').value || '00:00';
+    var msg;
+    if (mode === 'daily') {
+      msg = '确定启动定时备份？\n每天 ' + time + ' 自动执行年度备份同步';
+    } else {
+      var day = parseInt(document.getElementById('scheduleDay').value) || 1;
+      msg = '确定启动定时备份？\n每月' + day + '号 ' + time + ' 自动执行年度备份同步';
+    }
+    if (!confirm(msg)) return;
     var newCfg;
     if (mode === 'daily') {
       newCfg = { type: 'daily', time: time };

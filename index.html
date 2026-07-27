@@ -118,7 +118,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 /* 允许输入框和文本域正常选中 */
 input, textarea, select, [contenteditable] { -webkit-user-select: text; user-select: text; }
 button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; }
-.app { display: flex; max-width: 1100px; margin: 0 auto; padding: 16px; gap: 16px; min-height: 100vh; }
+.app { display: flex; max-width: 1100px; margin: 0 auto; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); gap: 16px; min-height: 100vh; }
 
 /* ---- 左侧：紧凑日历 ---- */
 .sidebar { width: 0; overflow: hidden; flex-shrink: 0; transition: width 0.3s ease; }

@@ -2417,6 +2417,8 @@ let initialSeconds = countdownTarget;
 let isRunning = false;
 let timerInterval = null;
 let totalElapsed = 0;
+let timerStartAt = 0;
+let timerStartSeconds = 0;
 
 // 番茄循环
 let autoCycleOn = false;
@@ -2665,14 +2667,17 @@ function startTimer() {
 function _doStartTimer() {
   if (isRunning) return;
   isRunning = true;
+  timerStartAt = Date.now();
+  timerStartSeconds = timerSeconds;
   if (currentTag) document.getElementById('tagSelector').classList.add('locked');
   document.getElementById('timerDone').style.display = 'none';
   document.getElementById('btnStart').style.display = 'none';
   document.getElementById('btnPause').style.display = '';
   updateCycleUI();
   timerInterval = setInterval(() => {
-    timerSeconds--;
-    totalElapsed++;
+    const elapsed = Math.floor((Date.now() - timerStartAt) / 1000);
+    timerSeconds = Math.max(0, timerStartSeconds - elapsed);
+    totalElapsed = elapsed;
     updateTimerDisplay();
     if (timerSeconds <= 0) {
       finishTimer();
@@ -2689,6 +2694,17 @@ function pauseTimer() {
   document.getElementById('btnPause').style.display = 'none';
   document.title = '日课';
 }
+
+// 页面恢复可见时立即刷新计时显示（解决移动端后台挂起问题）
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && isRunning) {
+    const elapsed = Math.floor((Date.now() - timerStartAt) / 1000);
+    timerSeconds = Math.max(0, timerStartSeconds - elapsed);
+    totalElapsed = elapsed;
+    updateTimerDisplay();
+    if (timerSeconds <= 0) finishTimer();
+  }
+});
 
 // ====== 全屏专注模式 ======
 let focusMode = false;

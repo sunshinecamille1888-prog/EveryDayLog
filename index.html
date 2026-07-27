@@ -861,6 +861,8 @@ body.focus-mode .month-summary { display: none !important; }
   color: var(--c-primary); text-decoration: none; cursor: pointer; font-weight: 600;
 }
 .auth-toggle a:hover { text-decoration: underline; }
+.auth-remember { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--c-text-mid); cursor: pointer; user-select: none; margin-bottom: 14px; justify-content: flex-start; padding-left: 2px; }
+.auth-remember input[type="checkbox"] { width: 14px; height: 14px; margin: 0; accent-color: var(--c-primary); cursor: pointer; }
 .auth-error {
   color: #e53935; font-size: 12px; margin-top: 10px; min-height: 20px;
   letter-spacing: 0.5px;
@@ -1014,6 +1016,7 @@ body.focus-mode .month-summary { display: none !important; }
     <div class="auth-subtitle">RiKe</div>
     <input type="text" id="auth-username" placeholder="用户名" autocomplete="username">
     <input type="password" id="auth-password" placeholder="密码" autocomplete="current-password">
+    <label class="auth-remember" id="auth-remember-label"><input type="checkbox" id="auth-remember"> 记住密码</label>
     <div id="auth-token-group">
       <input type="text" id="auth-invite-code" placeholder="注册码" autocomplete="off">
     </div>
@@ -1425,6 +1428,9 @@ const SESSION_PWHASH_KEY = 'edl_session_pwhash';
 const SESSION_TOKENENC_KEY = 'edl_session_tokenenc';
 const SESSION_USER_KEY = 'edl_session_user';
 const SESSION_BACKUP_KEY = 'edl_session_backup_key';
+const REMEMBER_PWHASH_KEY = 'edl_remember_pwhash';
+const REMEMBER_TOKENENC_KEY = 'edl_remember_tokenenc';
+const REMEMBER_USER_KEY = 'edl_remember_user';
 const GITHUB_AUTH_API = 'https://api.github.com/repos/sunshinecamille1888-prog/EveryDayLog/contents/auth.json';
 const GITHUB_AUTH_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/auth.json';
 const GITHUB_INVITES_PAGES = 'https://sunshinecamille1888-prog.github.io/EveryDayLog/invites.json';
@@ -1530,6 +1536,7 @@ function showLoginMode() {
   document.getElementById('auth-forgot-sep').style.display = '';
   document.getElementById('auth-forgot-link').style.display = '';
   document.getElementById('auth-error').textContent = '';
+  document.getElementById('auth-remember-label').style.display = '';
 }
 function toggleAuthMode() {
   var tg = document.getElementById('auth-token-group');
@@ -1547,6 +1554,7 @@ function toggleAuthMode() {
     document.getElementById('auth-toggle-link').onclick = toggleAuthMode;
     document.getElementById('auth-forgot-sep').style.display = 'none';
     document.getElementById('auth-forgot-link').style.display = 'none';
+    document.getElementById('auth-remember-label').style.display = 'none';
   } else {
     showLoginMode();
   }
@@ -1566,6 +1574,7 @@ function showRecoveryMode() {
   document.getElementById('auth-forgot-sep').style.display = 'none';
   document.getElementById('auth-forgot-link').style.display = 'none';
   document.getElementById('auth-error').textContent = '';
+  document.getElementById('auth-remember-label').style.display = 'none';
   document.getElementById('auth-password').placeholder = '注册码';
 }
 function showApp() {
@@ -1574,7 +1583,7 @@ function showApp() {
   updateUserDisplay();
 }
 function logout() {
-  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); sessionStorage.removeItem(SESSION_USER_KEY); sessionStorage.removeItem(SESSION_BACKUP_KEY); } catch(e) {}
+  try { localStorage.removeItem(GIT_TOKEN_KEY); sessionStorage.removeItem(SESSION_PWHASH_KEY); sessionStorage.removeItem(SESSION_TOKENENC_KEY); sessionStorage.removeItem(SESSION_USER_KEY); sessionStorage.removeItem(SESSION_BACKUP_KEY); localStorage.removeItem(REMEMBER_PWHASH_KEY); localStorage.removeItem(REMEMBER_TOKENENC_KEY); localStorage.removeItem(REMEMBER_USER_KEY); } catch(e) {}
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-username').value = '';
   document.getElementById('auth-password').value = '';
@@ -1594,6 +1603,35 @@ async function tryAutoLogin() {
     localStorage.setItem(GIT_TOKEN_KEY, tok);
     showApp();
   } catch(e) {
+    showLoginMode();
+    document.getElementById('auth-overlay').style.display = '';
+  }
+}
+async function tryAutoLoginRemember() {
+  try {
+    var ph = localStorage.getItem(REMEMBER_PWHASH_KEY);
+    var enc = localStorage.getItem(REMEMBER_TOKENENC_KEY);
+    var u = localStorage.getItem(REMEMBER_USER_KEY);
+    if (!ph || !enc) throw new Error('No remembered credentials');
+    sessionStorage.setItem(SESSION_PWHASH_KEY, ph);
+    sessionStorage.setItem(SESSION_TOKENENC_KEY, enc);
+    if (u) sessionStorage.setItem(SESSION_USER_KEY, u);
+    var tok = await aesDecrypt(enc, ph);
+    localStorage.setItem(GIT_TOKEN_KEY, tok);
+    // 尝试恢复备份密钥
+    try {
+      var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
+      if (res.ok) {
+        var remote = await res.json();
+        if (remote.encrypted_backup_key) {
+          var bk = await aesDecrypt(remote.encrypted_backup_key, ph);
+          sessionStorage.setItem(SESSION_BACKUP_KEY, bk);
+        }
+      }
+    } catch(e2) {}
+    showApp();
+  } catch(e) {
+    try { localStorage.removeItem(REMEMBER_PWHASH_KEY); localStorage.removeItem(REMEMBER_TOKENENC_KEY); localStorage.removeItem(REMEMBER_USER_KEY); } catch(e2) {}
     showLoginMode();
     document.getElementById('auth-overlay').style.display = '';
   }
@@ -1737,6 +1775,14 @@ async function handleLogin() {
         sessionStorage.setItem(SESSION_BACKUP_KEY, _newBk);
       } catch(e5) {}
     }
+    // 记住密码：persist pwhash + token_enc + user 到 localStorage
+    try {
+      if (document.getElementById('auth-remember').checked) {
+        localStorage.setItem(REMEMBER_PWHASH_KEY, ph);
+        localStorage.setItem(REMEMBER_TOKENENC_KEY, remote.token_enc);
+        localStorage.setItem(REMEMBER_USER_KEY, u);
+      }
+    } catch(e5) {}
     showApp();
   } catch(e) { err.textContent = '登录失败: ' + (e.message || e); btn.disabled = false; btn.textContent = '登录'; }
 }
@@ -2110,6 +2156,13 @@ async function saveInviteCode() {
 // ═══ 初始化 ═══
 (function initAuth() {
   showLoginMode();
+  // 优先尝试记住的密码自动登录
+  var rpwhash = null;
+  try { rpwhash = localStorage.getItem(REMEMBER_PWHASH_KEY); } catch(e) {}
+  if (rpwhash) {
+    tryAutoLoginRemember();
+    return;
+  }
   if (isRegistered()) { tryAutoLogin(); return; }
   document.getElementById('auth-overlay').style.display = '';
   document.getElementById('auth-password').addEventListener('keydown', function(e) {

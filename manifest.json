@@ -1,18 +1,28 @@
 {
-  "name": "Daily Doc",
-  "short_name": "DailyDoc",
-  "description": "每日文档 - 计时记录工具",
-  "start_url": "daily-doc.html",
+  "name": "日课 - 每日计时记录",
+  "short_name": "日课",
+  "description": "专注计时、记账与日常记录工具",
+  "start_url": "index.html",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#fff5f7",
+  "theme_color": "#f06292",
   "background_color": "#fff5f7",
   "icons": [
     {
       "src": "apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
-  "scope": "."
+  "scope": "/"
 }

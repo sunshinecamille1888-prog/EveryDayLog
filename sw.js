@@ -1,7 +1,10 @@
-const CACHE_NAME = 'daily-doc-v1';
+const CACHE_NAME = 'rike-v2';
 const PRE_CACHE_URLS = [
-  'daily-doc.html',
+  'index.html',
+  'back.html',
   'manifest.json',
+  'icon-192.png',
+  'icon-512.png',
   'apple-touch-icon.png'
 ];
 

@@ -997,6 +997,11 @@ body.focus-mode .month-summary { display: none !important; }
 
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f06292">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日课">
 <link rel="icon" href="data:,">
 </head>
 <body>
@@ -6057,6 +6062,15 @@ setDate = function(d) {
   try { _checkGitSyncBtn(); } catch(e) {}
 };
 /* ═══════════════════ 记账模块 end ═══════════════════ */
+
+// Service Worker 注册（PWA 离线支持）
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/EveryDayLog/sw.js', { scope: '/EveryDayLog/' })
+      .then(function(reg) { console.log('[SW] registered, scope:', reg.scope); })
+      .catch(function(err) { console.warn('[SW] register failed:', err); });
+  });
+}
 
 </script>
 

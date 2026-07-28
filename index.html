@@ -1016,10 +1016,8 @@ body.focus-mode .month-summary { display: none !important; }
 .weight-date-input:focus { border-color: var(--c-accent); }
 .btn-weight-record { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; border: none; padding: 9px 20px; border-radius: 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(233,30,99,0.2); }
 .btn-weight-record:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(233,30,99,0.3); }
-.weight-trend-bar { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 0 4px; margin-bottom: 4px; }
-.weight-trend-bar .wt-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 20px; }
-.weight-trend-bar .wt-bar { width: 100%; max-width: 24px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--c-accent), var(--c-primary)); transition: height 0.3s; min-height: 4px; }
-.weight-trend-bar .wt-bar-label { font-size: 9px; color: var(--c-text-mid); margin-top: 4px; text-align: center; white-space: nowrap; }
+.weight-trend-bar { display: flex; justify-content: center; margin-bottom: 4px; }
+#weightTrendCanvas { width: 100%; max-width: 560px; height: auto; display: block; border-radius: 8px; }
 .weight-trend-empty { font-size: 13px; color: var(--c-light); text-align: center; padding: 26px 0; }
 .weight-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
 .weight-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--c-bg); font-size: 14px; transition: background 0.15s; }
@@ -1397,7 +1395,7 @@ body.theme-dark .wt-diff-same { background: #1e1a14; }
               <button class="btn-weight-record" onclick="addWeightRecord()">记录</button>
             </div>
             <div class="weight-trend-bar" id="weightTrendBar">
-              <div class="weight-trend-empty">暂无近期记录</div>
+              <canvas id="weightTrendCanvas" width="560" height="160"></canvas>
             </div>
             <div class="weight-list" id="weightList">
               <div class="weight-trend-empty">暂无记录</div>
@@ -6277,31 +6275,92 @@ function renderWeight() {
       '<div class="ws-card"><div class="ws-val ' + diffClass + '" style="font-size:16px;">' + diffStr + '</div><div class="ws-label">总变化 kg</div></div>';
   }
 
-  // 趋势柱状图（最近 14 天）
+  // 趋势折线图（最近 7 天）
+  var canvas = document.getElementById('weightTrendCanvas');
   var trendEl = document.getElementById('weightTrendBar');
-  var today = new Date();
+  // 清理上一次渲染的空状态文字
+  var prevEmpty = trendEl.querySelector('.weight-trend-empty');
+  if (prevEmpty) prevEmpty.remove();
+  var dayNames = ['日', '一', '二', '三', '四', '五', '六'];
   var trendDates = [];
-  for (var i = 13; i >= 0; i--) {
+  for (var i = 6; i >= 0; i--) {
     var d = new Date(today);
     d.setDate(d.getDate() - i);
     var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    trendDates.push({ date: ds, label: (d.getMonth() + 1) + '/' + d.getDate(), val: records[ds] });
+    trendDates.push({ date: ds, label: dayNames[d.getDay()], val: records[ds] });
   }
   var hasTrend = trendDates.some(function(t) { return t.val !== undefined; });
   if (!hasTrend) {
-    trendEl.innerHTML = '<div class="weight-trend-empty">暂无近期记录</div>';
+    canvas.style.display = 'none';
+    trendEl.insertAdjacentHTML('beforeend', '<div class="weight-trend-empty">暂无近期记录</div>');
   } else {
-    var vals = trendDates.filter(function(t) { return t.val !== undefined; }).map(function(t) { return t.val; });
+    canvas.style.display = 'block';
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var pad = { top: 20, right: 24, bottom: 36, left: 48 };
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // 收集有值点的索引和数据
+    var pts = [];
+    trendDates.forEach(function(t, i) {
+      if (t.val !== undefined) pts.push({ i: i, val: t.val });
+    });
+
+    var vals = pts.map(function(p) { return p.val; });
     var minV = Math.min.apply(null, vals);
     var maxV = Math.max.apply(null, vals);
-    var range = maxV - minV || 1;
-    var html = '';
-    trendDates.forEach(function(t) {
-      var h = t.val !== undefined ? Math.max(8, ((t.val - minV) / range) * 80 + 8) : 0;
-      var vStr = t.val !== undefined ? t.val.toFixed(1) : '';
-      html += '<div class="wt-bar-wrap"><div class="wt-bar" style="height:' + h + 'px;' + (t.val === undefined ? 'opacity:0.15' : '') + '"></div><div class="wt-bar-label">' + t.label + '</div></div>';
+    if (maxV === minV) { maxV = minV + 1; }
+    var margin = (maxV - minV) * 0.25 || 1;
+    var yMin = minV - margin;
+    var yMax = maxV + margin;
+    var yRange = yMax - yMin;
+
+    function xPos(i) { return pad.left + (chartW / 6) * i; }
+    function yPos(v) { return pad.top + chartH - ((v - yMin) / yRange) * chartH; }
+
+    // Y轴网格线 & 刻度
+    var yTicks = 4;
+    ctx.strokeStyle = '#f8bbd0'; ctx.lineWidth = 1;
+    ctx.fillStyle = '#6d4c5e'; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
+    for (var t = 0; t <= yTicks; t++) {
+      var yVal = yMin + (yRange / yTicks) * t;
+      var y = yPos(yVal);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      ctx.fillText(yVal.toFixed(1), pad.left - 8, y + 4);
+    }
+
+    // X轴标签
+    ctx.fillStyle = '#6d4c5e'; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    trendDates.forEach(function(t, i) {
+      ctx.fillText(t.label, xPos(i), H - pad.bottom + 20);
     });
-    trendEl.innerHTML = html;
+
+    // 数据点圆点
+    var circR = 4;
+    pts.forEach(function(p) {
+      var cx = xPos(p.i), cy = yPos(p.val);
+      ctx.beginPath(); ctx.arc(cx, cy, circR, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.strokeStyle = '#f06292'; ctx.lineWidth = 2.5; ctx.stroke();
+
+      // 数值标注
+      ctx.fillStyle = '#880e4f'; ctx.font = 'bold 11px -apple-system, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(p.val.toFixed(1), cx, cy - 12);
+    });
+
+    // 连线
+    if (pts.length >= 2) {
+      ctx.strokeStyle = '#f06292'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(xPos(pts[0].i), yPos(pts[0].val));
+      for (var k = 1; k < pts.length; k++) {
+        ctx.lineTo(xPos(pts[k].i), yPos(pts[k].val));
+      }
+      ctx.stroke();
+    }
   }
 
   // 记录列表

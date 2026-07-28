@@ -2367,6 +2367,7 @@ function setDate(dateStr) {
   else if (currentStatsTab === 'month') drawMonthChart();
   else if (currentStatsTab === 'mood') drawMoodChart();
   else if (currentStatsTab === 'ledgerTrend') { drawLedgerTrend(); updateTrendCards(); }
+  else if (currentStatsTab === 'tagDist') drawTagDistribution();
 }
 function goToToday() { setDate(getToday()); }
 
@@ -3654,14 +3655,13 @@ function drawTagDistribution() {
   if (!canvas || !legend) return;
 
   const entries = loadEntries();
+  const currentEntry = entries[currentDate] || {};
   const tagTotals = {};
-  Object.values(entries).forEach(function(entry) {
-    if (entry.tagDurations) {
-      Object.keys(entry.tagDurations).forEach(function(tag) {
-        tagTotals[tag] = (tagTotals[tag] || 0) + entry.tagDurations[tag];
-      });
-    }
-  });
+  if (currentEntry.tagDurations) {
+    Object.keys(currentEntry.tagDurations).forEach(function(tag) {
+      tagTotals[tag] = currentEntry.tagDurations[tag];
+    });
+  }
 
   var tags = Object.keys(tagTotals).map(function(tag) { return { tag: tag, secs: tagTotals[tag] }; });
   tags.sort(function(a, b) { return b.secs - a.secs; });

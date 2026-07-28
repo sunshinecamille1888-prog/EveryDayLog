@@ -6277,11 +6277,15 @@ function syncWeightToGitHub() {
     });
     // 比对：一致则跳过
     if (JSON.stringify(remote) === JSON.stringify(merged)) return null;
-    var content = JSON.stringify(merged, null, 2);
-    return _gitSyncFetch({ filename: WEIGHT_REMOTE_FILE, content: content })
-    .then(function() {
-      saveWeightRecords(merged);
-      try { localStorage.setItem(WEIGHT_SNAPSHOT_KEY, JSON.stringify(merged)); } catch(e) {}
+    var rawContent = JSON.stringify(merged, null, 2);
+    return getBackupKey().then(function(bk) {
+      return bk ? aesEncrypt(rawContent, bk) : rawContent;
+    }).then(function(encContent) {
+      return _gitSyncFetch({ filename: WEIGHT_REMOTE_FILE, content: encContent })
+      .then(function() {
+        saveWeightRecords(merged);
+        try { localStorage.setItem(WEIGHT_SNAPSHOT_KEY, JSON.stringify(merged)); } catch(e) {}
+      });
     });
   })
   .catch(function(e) { console.warn('[weight] 同步失败:', e); });

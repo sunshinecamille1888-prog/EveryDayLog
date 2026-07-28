@@ -2890,8 +2890,8 @@ function finishTimer() {
       updateCycleUI();
       sendNotification('专注完成！', `第 ${currentRound} 轮专注结束，该休息 ${Math.floor(breakDuration/60)} 分钟了`);
       showToast('休息时间到了！');
-      // 自动开始休息
-      setTimeout(() => { if (!isRunning && autoCycleOn) startTimer(); }, 1500);
+      // 自动开始休息（跳过3-2-1倒计时）
+      setTimeout(() => { if (!isRunning && autoCycleOn) _doStartTimer(); }, 1500);
     } else {
       // 休息结束 → 进入专注
       currentPhase = 'focus';
@@ -2904,7 +2904,7 @@ function finishTimer() {
       updateCycleUI();
       sendNotification('休息结束！', '继续下一轮专注吧');
       showToast('开始下一轮专注！');
-      setTimeout(() => { if (!isRunning && autoCycleOn) startTimer(); }, 1500);
+      setTimeout(() => { if (!isRunning && autoCycleOn) _doStartTimer(); }, 1500);
     }
   } else {
     document.getElementById('timerDisplay').textContent = '00:00';

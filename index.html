@@ -3808,7 +3808,7 @@ function drawTagDistribution() {
       var textR = innerR + (outerR - innerR) * 0.55;
       var tx = cx + Math.cos(midAngle) * textR;
       var ty = cy + Math.sin(midAngle) * textR;
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = cBg;
       ctx.font = 'bold 15px -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -4192,6 +4192,11 @@ function setTheme(theme) {
   document.querySelectorAll('.theme-dot').forEach(function(d) { d.classList.remove('active'); });
   var active = document.querySelector('.theme-dot[data-theme="' + theme + '"]');
   if (active) active.classList.add('active');
+  // 体重面板激活时重绘趋势图以适配新主题色
+  try {
+    var tabContent = document.getElementById('tabContentWeight');
+    if (tabContent && tabContent.classList.contains('active')) { renderWeight(); }
+  } catch(e) {}
 }
 (function initTheme() {
   var saved = localStorage.getItem('daily-doc-theme');
@@ -5470,7 +5475,7 @@ function drawLedgerTrend() {
   const ch = H - pad.top - pad.bottom;
 
   // 标题
-  ctx.fillStyle = '#880e4f'; ctx.font = 'bold 14px -apple-system, sans-serif';
+  ctx.fillStyle = cDeep; ctx.font = 'bold 14px -apple-system, sans-serif';
   ctx.textAlign = 'center'; ctx.fillText(`${currentDate.slice(0,7)} 每日支出分类`, W/2, 20);
 
   // 计算堆叠 Y 轴最大值
@@ -6342,7 +6347,7 @@ function renderWeight() {
   var dayNames = ['日', '一', '二', '三', '四', '五', '六'];
   var trendDates = [];
   for (var i = 6; i >= 0; i--) {
-    var d = new Date(today);
+    var d = new Date(currentDate);
     d.setDate(d.getDate() - i);
     var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     trendDates.push({ date: ds, label: dayNames[d.getDay()], val: records[ds] });
@@ -6353,6 +6358,13 @@ function renderWeight() {
     trendEl.insertAdjacentHTML('beforeend', '<div class="weight-trend-empty">暂无近期记录</div>');
   } else {
     canvas.style.display = 'block';
+    // 从 CSS 变量读取主题颜色（适配主题切换）
+    var cs = getComputedStyle(document.body);
+    var cGrid = cs.getPropertyValue('--c-bg-mid').trim() || '#f8bbd0';
+    var cText = cs.getPropertyValue('--c-text-mid').trim() || '#6d4c5e';
+    var cAccent = cs.getPropertyValue('--c-accent').trim() || '#f06292';
+    var cDeep = cs.getPropertyValue('--c-deep').trim() || '#880e4f';
+    var cBg = cs.getPropertyValue('--c-bg').trim() || '#fce4ec';
     var ctx = canvas.getContext('2d');
     var W = canvas.width, H = canvas.height;
     var pad = { top: 20, right: 24, bottom: 36, left: 48 };
@@ -6381,8 +6393,8 @@ function renderWeight() {
 
     // Y轴网格线 & 刻度
     var yTicks = 4;
-    ctx.strokeStyle = '#f8bbd0'; ctx.lineWidth = 1;
-    ctx.fillStyle = '#6d4c5e'; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
+    ctx.strokeStyle = cGrid; ctx.lineWidth = 1;
+    ctx.fillStyle = cText; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
     for (var t = 0; t <= yTicks; t++) {
       var yVal = yMin + (yRange / yTicks) * t;
       var y = yPos(yVal);
@@ -6391,7 +6403,7 @@ function renderWeight() {
     }
 
     // X轴标签
-    ctx.fillStyle = '#6d4c5e'; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = cText; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
     trendDates.forEach(function(t, i) {
       ctx.fillText(t.label, xPos(i), H - pad.bottom + 20);
     });
@@ -6401,17 +6413,17 @@ function renderWeight() {
     pts.forEach(function(p) {
       var cx = xPos(p.i), cy = yPos(p.val);
       ctx.beginPath(); ctx.arc(cx, cy, circR, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff'; ctx.fill();
-      ctx.strokeStyle = '#f06292'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = cBg; ctx.fill();
+      ctx.strokeStyle = cAccent; ctx.lineWidth = 2.5; ctx.stroke();
 
       // 数值标注
-      ctx.fillStyle = '#880e4f'; ctx.font = 'bold 11px -apple-system, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = cDeep; ctx.font = 'bold 11px -apple-system, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(p.val.toFixed(1), cx, cy - 12);
     });
 
     // 连线
     if (pts.length >= 2) {
-      ctx.strokeStyle = '#f06292'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.strokeStyle = cAccent; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(xPos(pts[0].i), yPos(pts[0].val));
       for (var k = 1; k < pts.length; k++) {
@@ -6428,20 +6440,20 @@ function renderWeight() {
     return;
   }
   var html = '';
-  var prevVal = null;
   for (var i = dates.length - 1; i >= 0; i--) {
     var date = dates[i];
     var val = records[date];
     var diffHtml = '';
-    if (prevVal !== null) {
-      var d = val - prevVal;
+    // 与下一条更旧的记录对比（即倒数第二条与最旧对比，体现时间线上的变化方向）
+    if (i > 0) {
+      var olderVal = records[dates[i - 1]];
+      var d = val - olderVal;
       if (Math.abs(d) >= 0.05) {
         var cls = d > 0 ? 'wt-diff-up' : 'wt-diff-down';
         diffHtml = '<span class="weight-item-diff ' + cls + '">' + (d > 0 ? '+' : '') + d.toFixed(1) + '</span>';
       }
     }
     html += '<div class="weight-item"><span class="weight-item-date">' + date + '</span><span><span class="weight-item-val">' + val.toFixed(1) + ' kg</span>' + diffHtml + '</span><button class="btn-weight-delete" onclick="deleteWeightRecord(\'' + date + '\')" title="删除">&times;</button></div>';
-    prevVal = val;
   }
   listEl.innerHTML = html;
 }

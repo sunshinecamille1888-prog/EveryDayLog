@@ -102,7 +102,7 @@
 
 
     /* ── 主题切换器 ── */
-    .theme-switcher { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .theme-switcher { display: flex; align-items: center; gap: 6px; }
     .theme-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; flex-shrink: 0; }
     .theme-dot:hover { transform: scale(1.2); }
     .theme-dot.active { border-color: #555; box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
@@ -178,9 +178,9 @@ button, a, .clickable, [onclick] { cursor: pointer; touch-action: manipulation; 
 .main { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 /* 日期标题 */
-.date-header { display: flex; align-items: center; gap: 10px; }
+.date-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .date-title { font-size: 18px; font-weight: 800; color: var(--c-deep); }
-.date-timer-summary { font-size: 13px; color: var(--c-primary); font-weight: 600; margin-left: auto; }
+.date-timer-summary { font-size: 13px; color: var(--c-primary); font-weight: 600; margin-right: auto; }
 .btn-calendar { background: var(--c-bg); border: none; color: var(--c-primary); padding: 7px 16px; border-radius: 14px; font-size: 13px; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
 .btn-calendar:hover { background: var(--c-bg-mid); transform: translateY(-1px); }
 .btn-calendar.active { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; box-shadow: 0 2px 8px rgba(233,30,99,0.3); }
@@ -471,6 +471,12 @@ body.theme-dark .focus-hint { color: rgba(255,255,255,0.15); }
 .header-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
 .sync-btn-mobile { display: none; }
+
+@media (max-width: 950px) {
+  .theme-switcher { gap: 4px; }
+  .theme-dot { width: 18px; height: 18px; }
+  .btn-logout { padding: 6px 10px; }
+}
 
 @media (max-width: 700px) {
   .app { flex-direction: column; padding: 12px 8px; padding-top: calc(env(safe-area-inset-top, 12px)); gap: 10px; }

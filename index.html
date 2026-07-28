@@ -1003,6 +1003,54 @@ body.focus-mode .month-summary { display: none !important; }
 #tokenEditRow { gap: 8px; align-items: flex-start; }
 #tokenEditRow > .pw-wrapper { flex: 1; min-width: 200px; }
 
+/* ── 体重记录 ── */
+.weight-panel { background: #fff; border-radius: 18px; padding: 18px 22px; box-shadow: 0 4px 20px rgba(255,105,135,0.1); }
+.weight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.weight-title { font-size: 16px; font-weight: 700; color: var(--c-deep); }
+.weight-form { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.weight-input { border: 2px solid var(--c-bg-mid); border-radius: 12px; padding: 8px 14px; font-size: 22px; font-weight: 700; width: 120px; text-align: center; color: var(--c-deep); outline: none; background: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: border-color 0.2s; }
+.weight-input:focus { border-color: var(--c-accent); box-shadow: 0 0 0 3px rgba(240,98,146,0.08); }
+.weight-input::placeholder { color: #d0c0c8; font-size: 14px; font-weight: 500; }
+.weight-unit { font-size: 15px; color: var(--c-text-mid); font-weight: 600; }
+.weight-date-input { border: 2px solid var(--c-bg-mid); border-radius: 12px; padding: 8px 12px; font-size: 14px; color: var(--c-text-mid); outline: none; background: #fff; font-weight: 600; transition: border-color 0.2s; }
+.weight-date-input:focus { border-color: var(--c-accent); }
+.btn-weight-record { background: linear-gradient(135deg, var(--c-accent), var(--c-primary)); color: #fff; border: none; padding: 9px 20px; border-radius: 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(233,30,99,0.2); }
+.btn-weight-record:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(233,30,99,0.3); }
+.weight-trend-bar { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 0 4px; margin-bottom: 4px; }
+.weight-trend-bar .wt-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 20px; }
+.weight-trend-bar .wt-bar { width: 100%; max-width: 24px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--c-accent), var(--c-primary)); transition: height 0.3s; min-height: 4px; }
+.weight-trend-bar .wt-bar-label { font-size: 9px; color: var(--c-text-mid); margin-top: 4px; text-align: center; white-space: nowrap; }
+.weight-trend-empty { font-size: 13px; color: var(--c-light); text-align: center; padding: 26px 0; }
+.weight-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
+.weight-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--c-bg); font-size: 14px; transition: background 0.15s; }
+.weight-item:last-child { border-bottom: none; }
+.weight-item:hover { background: var(--c-bg-light); }
+.weight-item-date { color: var(--c-text-mid); font-size: 13px; }
+.weight-item-val { font-weight: 700; color: var(--c-deep); font-size: 15px; }
+.weight-item-diff { font-size: 12px; margin-left: 8px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.wt-diff-up { color: #e53935; background: #ffebee; }
+.wt-diff-down { color: #43a047; background: #e8f5e9; }
+.wt-diff-same { color: var(--c-text-mid); background: var(--c-bg); }
+.btn-weight-delete { background: none; border: none; color: var(--c-light); font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
+.btn-weight-delete:hover { color: #e53935; background: #ffebee; }
+.weight-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.ws-card { background: var(--c-bg-light); border-radius: 12px; padding: 10px 16px; min-width: 80px; text-align: center; }
+.ws-card .ws-val { font-size: 20px; font-weight: 700; color: var(--c-deep); }
+.ws-card .ws-label { font-size: 11px; color: var(--c-text-mid); margin-top: 2px; }
+body.theme-dark .weight-panel { background: #2a241c; }
+body.theme-dark .weight-input { background: #1e1a14; color: #e8dcc8; border-color: #3a3028; }
+body.theme-dark .weight-input:focus { border-color: #b8942f; }
+body.theme-dark .weight-date-input { background: #1e1a14; color: #e8dcc8; border-color: #3a3028; }
+body.theme-dark .weight-date-input:focus { border-color: #b8942f; }
+body.theme-dark .weight-item { border-bottom-color: #3a3028; }
+body.theme-dark .weight-item:hover { background: #1e1a14; }
+body.theme-dark .weight-item-val { color: #e8dcc8; }
+body.theme-dark .ws-card { background: #1e1a14; }
+body.theme-dark .ws-card .ws-val { color: #e8dcc8; }
+body.theme-dark .wt-diff-up { color: #ef5350; background: rgba(229,57,53,0.15); }
+body.theme-dark .wt-diff-down { color: #66bb6a; background: rgba(76,175,80,0.15); }
+body.theme-dark .wt-diff-same { background: #1e1a14; }
+
 </style>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -1273,6 +1321,7 @@ body.focus-mode .month-summary { display: none !important; }
       <button class="plan-btn" onclick="selectDropdownTab('2','学习笔记')">学习笔记</button>
       <button class="plan-btn" onclick="selectDropdownTab('3','三餐四季')">三餐四季</button>
       <button class="plan-btn" onclick="selectDropdownTab('ledger','记账')">记账</button>
+      <button class="plan-btn" onclick="selectDropdownTab('weight','体重记录')">体重记录</button>
     </div>
 
     <div class="editor-panel">
@@ -1335,6 +1384,24 @@ body.focus-mode .month-summary { display: none !important; }
               <button class="l-budget-btn" onclick="clearBudget()" style="border-color:var(--c-light);color:var(--c-light);">清除</button>
             </div>
             <div id="catStats"><div class="lcb-no-data">暂无本月支出数据</div></div>
+          </div>
+        </div>
+        <div class="tab-content" id="tabContentWeight">
+          <!-- 体重记录面板内嵌 -->
+          <div class="weight-panel">
+            <div class="weight-summary" id="weightSummary"></div>
+            <div class="weight-form">
+              <input type="number" class="weight-input" id="weightInput" placeholder="65.5" min="20" max="300" step="0.1">
+              <span class="weight-unit">kg</span>
+              <input type="date" class="weight-date-input" id="weightDateInput">
+              <button class="btn-weight-record" onclick="addWeightRecord()">记录</button>
+            </div>
+            <div class="weight-trend-bar" id="weightTrendBar">
+              <div class="weight-trend-empty">暂无近期记录</div>
+            </div>
+            <div class="weight-list" id="weightList">
+              <div class="weight-trend-empty">暂无记录</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2396,7 +2463,8 @@ function toggleCalendar() {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const content = document.getElementById('tabContent' + (tab === 'ledger' ? 'Ledger' : tab));
+  var target = tab === 'ledger' ? 'Ledger' : (tab === 'weight' ? 'Weight' : tab);
+  const content = document.getElementById('tabContent' + target);
   if (content) content.classList.add('active');
 }
 
@@ -2435,6 +2503,20 @@ function selectDropdownTab(tab, label) {
     document.getElementById('tabPanel').style.display = '';
     switchTab('ledger');
     renderLedger();
+    if (editor) editor.style.display = 'none';
+    document.querySelector('.editor-toolbar').style.display = 'none';
+    document.querySelector('.editor-actions').style.display = 'none';
+    document.getElementById('mdPreview').style.display = 'none';
+    document.getElementById('dailyQuote').style.display = 'none';
+    if (previewOn) togglePreview();
+    return;
+  }
+  // 体重记录：显示 tab-panel 并隐藏编辑器相关
+  if (tab === 'weight') {
+    document.querySelector('.editor-panel').style.display = '';
+    document.getElementById('tabPanel').style.display = '';
+    switchTab('weight');
+    renderWeight();
     if (editor) editor.style.display = 'none';
     document.querySelector('.editor-toolbar').style.display = 'none';
     document.querySelector('.editor-actions').style.display = 'none';
@@ -6135,6 +6217,118 @@ setDate = function(d) {
   try { renderHuangli(d); } catch(e) {}
   try { _checkGitSyncBtn(); } catch(e) {}
 };
+const WEIGHT_KEY = 'weightRecords';
+
+function getWeightRecords() {
+  try { return JSON.parse(localStorage.getItem(WEIGHT_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+
+function saveWeightRecords(records) {
+  try { localStorage.setItem(WEIGHT_KEY, JSON.stringify(records)); } catch(e) {}
+}
+
+function addWeightRecord() {
+  var input = document.getElementById('weightInput');
+  var val = parseFloat(input.value);
+  if (isNaN(val) || val <= 0) { showToast('请输入有效的体重'); return; }
+  val = Math.round(val * 10) / 10;
+  var dateInput = document.getElementById('weightDateInput');
+  var date = dateInput.value || currentDate;
+  var records = getWeightRecords();
+  records[date] = val;
+  // 按日期排序
+  var sorted = {};
+  Object.keys(records).sort().forEach(function(k) { sorted[k] = records[k]; });
+  saveWeightRecords(sorted);
+  input.value = '';
+  renderWeight();
+  showToast('体重已记录');
+}
+
+function deleteWeightRecord(date) {
+  if (!confirm('确定删除 ' + date + ' 的体重记录？')) return;
+  var records = getWeightRecords();
+  delete records[date];
+  saveWeightRecords(records);
+  renderWeight();
+}
+
+function renderWeight() {
+  var records = getWeightRecords();
+  var dates = Object.keys(records).sort();
+  // 当天日期默认填入日期选择器
+  var dateInput = document.getElementById('weightDateInput');
+  if (dateInput && !dateInput.value) dateInput.value = currentDate;
+
+  // 摘要卡片
+  var summaryEl = document.getElementById('weightSummary');
+  if (dates.length === 0) {
+    summaryEl.innerHTML = '';
+  } else {
+    var latest = records[dates[dates.length - 1]];
+    var first = records[dates[0]];
+    var diff = latest - first;
+    var diffStr = diff > 0 ? '+' + diff.toFixed(1) : diff.toFixed(1);
+    var diffClass = diff > 0 ? 'wt-diff-up' : (diff < 0 ? 'wt-diff-down' : 'wt-diff-same');
+    summaryEl.innerHTML =
+      '<div class="ws-card"><div class="ws-val">' + latest.toFixed(1) + '</div><div class="ws-label">最新体重 kg</div></div>' +
+      '<div class="ws-card"><div class="ws-val">' + dates.length + '</div><div class="ws-label">记录次数</div></div>' +
+      '<div class="ws-card"><div class="ws-val ' + diffClass + '" style="font-size:16px;">' + diffStr + '</div><div class="ws-label">总变化 kg</div></div>';
+  }
+
+  // 趋势柱状图（最近 14 天）
+  var trendEl = document.getElementById('weightTrendBar');
+  var today = new Date();
+  var trendDates = [];
+  for (var i = 13; i >= 0; i--) {
+    var d = new Date(today);
+    d.setDate(d.getDate() - i);
+    var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    trendDates.push({ date: ds, label: (d.getMonth() + 1) + '/' + d.getDate(), val: records[ds] });
+  }
+  var hasTrend = trendDates.some(function(t) { return t.val !== undefined; });
+  if (!hasTrend) {
+    trendEl.innerHTML = '<div class="weight-trend-empty">暂无近期记录</div>';
+  } else {
+    var vals = trendDates.filter(function(t) { return t.val !== undefined; }).map(function(t) { return t.val; });
+    var minV = Math.min.apply(null, vals);
+    var maxV = Math.max.apply(null, vals);
+    var range = maxV - minV || 1;
+    var html = '';
+    trendDates.forEach(function(t) {
+      var h = t.val !== undefined ? Math.max(8, ((t.val - minV) / range) * 80 + 8) : 0;
+      var vStr = t.val !== undefined ? t.val.toFixed(1) : '';
+      html += '<div class="wt-bar-wrap"><div class="wt-bar" style="height:' + h + 'px;' + (t.val === undefined ? 'opacity:0.15' : '') + '"></div><div class="wt-bar-label">' + t.label + '</div></div>';
+    });
+    trendEl.innerHTML = html;
+  }
+
+  // 记录列表
+  var listEl = document.getElementById('weightList');
+  if (dates.length === 0) {
+    listEl.innerHTML = '<div class="weight-trend-empty">暂无记录</div>';
+    return;
+  }
+  var html = '';
+  var prevVal = null;
+  for (var i = dates.length - 1; i >= 0; i--) {
+    var date = dates[i];
+    var val = records[date];
+    var diffHtml = '';
+    if (prevVal !== null) {
+      var d = val - prevVal;
+      if (Math.abs(d) >= 0.05) {
+        var cls = d > 0 ? 'wt-diff-up' : 'wt-diff-down';
+        diffHtml = '<span class="weight-item-diff ' + cls + '">' + (d > 0 ? '+' : '') + d.toFixed(1) + '</span>';
+      }
+    }
+    html += '<div class="weight-item"><span class="weight-item-date">' + date + '</span><span><span class="weight-item-val">' + val.toFixed(1) + ' kg</span>' + diffHtml + '</span><button class="btn-weight-delete" onclick="deleteWeightRecord(\'' + date + '\')" title="删除">&times;</button></div>';
+    prevVal = val;
+  }
+  listEl.innerHTML = html;
+}
+
 /* ═══════════════════ 记账模块 end ═══════════════════ */
 
 // Service Worker 注册（PWA 离线支持）

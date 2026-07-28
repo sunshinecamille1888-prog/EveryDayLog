@@ -3288,6 +3288,24 @@ function togglePreview() {
   }
 }
 
+// 动态调整顶部间距：macOS 全屏模式 28px（无 traffic lights），窗口模式 52px（避开标题栏）
+(function initFullscreenPadding() {
+  const app = document.querySelector('.app');
+  if (!app) return;
+  const PAD_WIN = 'calc(env(safe-area-inset-top, 52px))';
+  const PAD_FS = 'calc(env(safe-area-inset-top, 28px))';
+  function isFullscreen() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return true;
+    if (window.outerWidth >= screen.width - 5 && window.outerHeight >= screen.height - 5) return true;
+    return false;
+  }
+  function adjust() { app.style.paddingTop = isFullscreen() ? PAD_FS : PAD_WIN; }
+  adjust();
+  document.addEventListener('fullscreenchange', adjust);
+  document.addEventListener('webkitfullscreenchange', adjust);
+  window.addEventListener('resize', adjust);
+})();
+
 // 编辑时实时更新预览
 document.addEventListener('DOMContentLoaded', () => {
   // 兜底隐藏编辑器面板（防止 init 中 setDate 因 DOM 未就绪漏执行）

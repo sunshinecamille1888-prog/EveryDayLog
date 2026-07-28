@@ -6206,6 +6206,8 @@ function toggleSchedule() {
 try { initScheduleUI(); } catch(e) {}
 // 页面加载时检查 GitHub 同步按钮状态
 try { _checkGitSyncBtn(); } catch(e) {}
+// 页面加载时从 GitHub 拉取体重记录
+try { fetchAndMergeWeightFromGitHub(); } catch(e) {}
 
 /* 挂载到现有 setDate / 日期切换 */
 const _origSetDate = setDate;
@@ -6216,6 +6218,8 @@ setDate = function(d) {
   try { _checkGitSyncBtn(); } catch(e) {}
 };
 const WEIGHT_KEY = 'weightRecords';
+const WEIGHT_REMOTE_FILE = 'weight-records.json';
+const WEIGHT_SNAPSHOT_KEY = WEIGHT_KEY + '_snapshot';
 
 function getWeightRecords() {
   try { return JSON.parse(localStorage.getItem(WEIGHT_KEY) || '{}'); }
@@ -6224,6 +6228,58 @@ function getWeightRecords() {
 
 function saveWeightRecords(records) {
   try { localStorage.setItem(WEIGHT_KEY, JSON.stringify(records)); } catch(e) {}
+}
+
+// 从 GitHub 拉取并合并体重记录
+function fetchAndMergeWeightFromGitHub() {
+  if (!_canGitSync()) return Promise.resolve(getWeightRecords());
+  return _gitFetchRemoteData(WEIGHT_REMOTE_FILE)
+  .then(function(remote) {
+    remote = remote || {};
+    var local = getWeightRecords();
+    var merged = {};
+    // 远端为基底，本地覆盖（本地优先），远端独有保留
+    Object.keys(remote).forEach(function(k) { merged[k] = remote[k]; });
+    Object.keys(local).forEach(function(k) { merged[k] = local[k]; });
+    // 快照删除检测：snapshot 存在但 local 不存在 → 本地主动删除
+    var snapshot = {};
+    try { snapshot = JSON.parse(localStorage.getItem(WEIGHT_SNAPSHOT_KEY) || '{}'); } catch(e) {}
+    Object.keys(snapshot).forEach(function(k) {
+      if (!(k in local)) delete merged[k];
+    });
+    saveWeightRecords(merged);
+    try { localStorage.setItem(WEIGHT_SNAPSHOT_KEY, JSON.stringify(merged)); } catch(e) {}
+    return merged;
+  })
+  .catch(function(e) { console.warn('[weight] 拉取失败:', e); return getWeightRecords(); });
+}
+
+// 同步体重记录到 GitHub（合并远端后 PUT）
+function syncWeightToGitHub() {
+  if (!_canGitSync()) return Promise.resolve();
+  var local = getWeightRecords();
+  return _gitFetchRemoteData(WEIGHT_REMOTE_FILE)
+  .then(function(remote) {
+    remote = remote || {};
+    var merged = {};
+    Object.keys(remote).forEach(function(k) { merged[k] = remote[k]; });
+    Object.keys(local).forEach(function(k) { merged[k] = local[k]; });
+    // 快照删除检测
+    var snapshot = {};
+    try { snapshot = JSON.parse(localStorage.getItem(WEIGHT_SNAPSHOT_KEY) || '{}'); } catch(e) {}
+    Object.keys(snapshot).forEach(function(k) {
+      if (!(k in local)) delete merged[k];
+    });
+    // 比对：一致则跳过
+    if (JSON.stringify(remote) === JSON.stringify(merged)) return null;
+    var content = JSON.stringify(merged, null, 2);
+    return _gitSyncFetch({ filename: WEIGHT_REMOTE_FILE, content: content })
+    .then(function() {
+      saveWeightRecords(merged);
+      try { localStorage.setItem(WEIGHT_SNAPSHOT_KEY, JSON.stringify(merged)); } catch(e) {}
+    });
+  })
+  .catch(function(e) { console.warn('[weight] 同步失败:', e); });
 }
 
 function addWeightRecord() {
@@ -6242,6 +6298,7 @@ function addWeightRecord() {
   input.value = '';
   renderWeight();
   showToast('体重已记录');
+  syncWeightToGitHub();
 }
 
 function deleteWeightRecord(date) {
@@ -6250,6 +6307,7 @@ function deleteWeightRecord(date) {
   delete records[date];
   saveWeightRecords(records);
   renderWeight();
+  syncWeightToGitHub();
 }
 
 function renderWeight() {

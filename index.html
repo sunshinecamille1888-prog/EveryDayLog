@@ -3537,14 +3537,6 @@ function drawBarChart(data, labels, title) {
     statsCtx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
     statsCtx.fill();
 
-    // 数值
-    if (v > 0) {
-      statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 12px -apple-system, sans-serif';
-      statsCtx.textAlign = 'center';
-      const label = v;
-      statsCtx.fillText(label, x + barW/2, y - 6);
-    }
-
     // X轴标签（仅≤7个全量渲染；超过7个时仅渲染1号/5的倍数/最后一天）
     const dayNum = parseInt(labels[i]) || 0;
     const isLast = i === labels.length - 1;
@@ -3555,6 +3547,29 @@ function drawBarChart(data, labels, title) {
       statsCtx.fillText(labels[i], x + barW/2, pad.top + chartH + 16);
     }
   });
+
+  // 数值标签——先收集再渲染，避免相邻重叠
+  const labelCandidates = [];
+  data.forEach((v, i) => {
+    if (v > 0) {
+      const bx = pad.left + gap * i + (gap - barW) / 2;
+      const bh = (v / chartMax) * chartH;
+      const by = pad.top + chartH - bh;
+      labelCandidates.push({ v, cx: bx + barW / 2, y: by - 6, i });
+    }
+  });
+
+  statsCtx.fillStyle = '#880e4f'; statsCtx.font = 'bold 11px -apple-system, sans-serif';
+  statsCtx.textAlign = 'center';
+  let lastRight = -Infinity;
+  for (const lc of labelCandidates) {
+    const label = String(lc.v);
+    const tw = statsCtx.measureText(label).width;
+    const left = lc.cx - tw / 2;
+    if (left < lastRight + 3) continue;
+    statsCtx.fillText(label, lc.cx, lc.y);
+    lastRight = lc.cx + tw / 2;
+  }
 }
 
 function drawHeatmap() {

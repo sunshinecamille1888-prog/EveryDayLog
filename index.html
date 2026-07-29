@@ -3772,12 +3772,16 @@ function drawTagDistribution() {
     emptyEl.style.display = 'block';
     canvas.style.display = 'none';
     legend.innerHTML = '';
+    var emptyCtx = canvas.getContext('2d');
+    emptyCtx.clearRect(0, 0, canvas.width, canvas.height);
     return;
   }
 
   emptyEl.style.display = 'none';
   canvas.style.display = '';
 
+  var cs = getComputedStyle(document.body);
+  var cBg = cs.getPropertyValue('--c-bg').trim() || '#fce4ec';
   var ctx = canvas.getContext('2d');
   var W = canvas.width, H = canvas.height;
   var cx = W / 2, cy = H / 2;
@@ -4192,10 +4196,13 @@ function setTheme(theme) {
   document.querySelectorAll('.theme-dot').forEach(function(d) { d.classList.remove('active'); });
   var active = document.querySelector('.theme-dot[data-theme="' + theme + '"]');
   if (active) active.classList.add('active');
-  // 体重面板激活时重绘趋势图以适配新主题色
+  // 体重面板/项目分布激活时重绘以适配新主题色
   try {
     var tabContent = document.getElementById('tabContentWeight');
     if (tabContent && tabContent.classList.contains('active')) { renderWeight(); }
+  } catch(e) {}
+  try {
+    if (typeof currentStatsTab !== 'undefined' && currentStatsTab === 'tagDist') { drawTagDistribution(); }
   } catch(e) {}
 }
 (function initTheme() {

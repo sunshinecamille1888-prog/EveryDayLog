@@ -5441,6 +5441,13 @@ function drawLedgerTrend() {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   ctx.clearRect(0, 0, W, H);
+
+  // 从 CSS 变量读取主题颜色
+  const cs = getComputedStyle(document.body);
+  const cGrid = cs.getPropertyValue('--c-bg-mid').trim() || '#fce4ec';
+  const cText = cs.getPropertyValue('--c-text-mid').trim() || '#999';
+  const cDeep = cs.getPropertyValue('--c-deep').trim() || '#880e4f';
+
   const _ledgerRects = []; // 收集每日柱子区域用于悬浮提示
 
   const months = getMonthDays();
@@ -5465,8 +5472,9 @@ function drawLedgerTrend() {
   const maxStack = (() => { const v = Math.max(1, ...dailyTotals); return isNaN(v) ? 1 : v; })();
   const hasData = dailyTotals.some(v => v > 0);
   if (!hasData) {
-    ctx.fillStyle = '#999'; ctx.font = '14px -apple-system, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = cText; ctx.font = '14px -apple-system, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('本月暂无支出记录', W/2, H/2);
+    window._barRects = [];
     return;
   }
 
@@ -5480,11 +5488,11 @@ function drawLedgerTrend() {
 
   // 计算堆叠 Y 轴最大值
   // Y轴
-  ctx.strokeStyle = '#fce4ec'; ctx.lineWidth = 1;
+  ctx.strokeStyle = cGrid; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + ch * (1 - i / 4);
     ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
-    ctx.fillStyle = '#f48fb1'; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillStyle = cText; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(Math.round(maxStack * i / 4), pad.left - 8, y + 4);
   }
 
@@ -5514,7 +5522,7 @@ function drawLedgerTrend() {
   window._barRects = _ledgerRects;
 
   // X轴标签（1号/5的倍数/最后一天，避免相邻重叠）
-  ctx.fillStyle = '#999'; ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = cText; ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';
   months.forEach((d, i) => {
     const day = parseInt(d.split('-')[2]);
     const isLast = i === months.length - 1;
@@ -5531,7 +5539,7 @@ function drawLedgerTrend() {
   EXPENSE_CATS.forEach((c, i) => {
     ctx.fillStyle = CAT_COLORS[i % CAT_COLORS.length];
     ctx.fillRect(lx, legendY, 10, 10);
-    ctx.fillStyle = '#666'; ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillStyle = cText; ctx.font = '10px -apple-system, sans-serif';
     ctx.fillText(c.name, lx + 13, legendY + 9);
     lx += ctx.measureText(c.name).width + 26;
   });

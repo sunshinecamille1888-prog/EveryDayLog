@@ -322,6 +322,7 @@ body.theme-dark .plan-btn.active { border-color: #d4a843; color: #d4a843; backgr
 .md-preview h3 { font-size: 14px; color: var(--c-mid-dark); margin: 10px 0 4px; }
 .md-preview ul, .md-preview ol { padding-left: 18px; margin: 5px 0; }
 .md-preview li { margin: 2px 0; font-size: 13px; }
+.md-done { text-decoration: line-through; color: #aaa; }
 .md-preview code { background: var(--c-bg-light); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--c-dark); }
 .md-preview pre { background: #faf8fc; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid #e8e0e4; }
 .md-preview pre code { background: none; padding: 0; border: none; }
@@ -633,8 +634,6 @@ body.theme-dark .trend-card { background: #2a241c; border-color: #3a3028; }
 body.theme-dark .trend-card .tc-value { color: #e8dcc8; }
 body.theme-dark .trend-card .tc-label { color: #888; }
 
-/* ── 支出趋势饼图容器 ── */
-.trend-pie-row { display: flex; gap: 16px; align-items: flex-start; margin-top: 12px; flex-wrap: wrap; }
 .trend-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11px; }
 .trend-legend .tl-item { display: flex; align-items: center; gap: 4px; }
 .trend-legend .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -2392,6 +2391,44 @@ function nextMonth() {
 
 // ====== 日期切换 ======
 function setDate(dateStr) {
+  // 未完成事项自动滚动：从"今天"切到新日期时，检查昨日三件事未完成项
+  if (dateStr !== currentDate && currentDate && currentDate < dateStr) {
+    const allEntries = loadEntries();
+    const prevEntry = allEntries[currentDate];
+    if (prevEntry && prevEntry.templateContents && prevEntry.templateContents['今日三件事']) {
+      const prevText = prevEntry.templateContents['今日三件事'];
+      // 提取未勾选的 checkbox 行及有序列表行（不含 ## 标题行）
+      const lines = prevText.split('\n');
+      const unfinished = [];
+      let inTarget = false;
+      for (const line of lines) {
+        if (/^## / .test(line)) { inTarget = line.includes('今日目标') || line.includes('完成事项') || line.includes('明日计划'); continue; }
+        if (!inTarget) continue;
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        // 勾选的跳过，未勾选的保留原序
+        if (/^- \[x\]/.test(trimmed)) continue;
+        // 有序列表项视为待办
+        if (/^\d+\. /.test(trimmed)) { unfinished.push(trimmed); }
+        // 未勾选 checkbox
+        else if (/^- \[ \]/.test(trimmed)) { unfinished.push(trimmed); }
+      }
+      if (unfinished.length > 0) {
+        const targetEntries = loadEntries();
+        const targetEntry = targetEntries[dateStr] || { content: '', duration: 0 };
+        if (!targetEntry.templateContents) targetEntry.templateContents = {};
+        const existing = targetEntry.templateContents['今日三件事'] || '';
+        if (existing.trim()) {
+          targetEntry.templateContents['今日三件事'] = '## 今日目标\n\n' + unfinished.join('\n') + '\n\n' + existing;
+        } else {
+          const defaultTmpl = '## 今日目标\n\n' + unfinished.join('\n') + '\n\n## 完成事项\n\n- \n\n## 明日计划\n\n- ';
+          targetEntry.templateContents['今日三件事'] = defaultTmpl;
+        }
+        targetEntry.content = targetEntry.templateContents['今日三件事'];
+        saveEntries(targetEntries);
+      }
+    }
+  }
   currentDate = dateStr;
   _pendingTemplateContents = null;
   showDailyQuote();
@@ -3254,6 +3291,8 @@ function clearEditor() {
   // 记账模式：清空当日账本记录，面板保持显示
   if (document.getElementById('tabPanel').style.display !== 'none') {
     const data = getLedgerData();
+    const dayTxns = data.filter(t => t.date === currentDate);
+    if (dayTxns.length > 0 && !confirm(`确定清空当日全部 ${dayTxns.length} 条记账记录？`)) return;
     saveLedgerData(data.filter(t => t.date !== currentDate));
     renderLedger();
     return;
@@ -3333,11 +3372,18 @@ function renderMarkdown(text) {
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   // 引用
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  // 有序列表：先占位保护，避免被 <ul> 误包裹
+  html = html.replace(/^\d+\. (.+)$/gm, '%%OLI%%$1%%/OLI%%');
+  html = html.replace(/(%%OLI%%.*%%\/OLI%%\n?)+/g, '<ol>$&</ol>');
+  // Checkbox
+  html = html.replace(/^- \[x\] (.+)$/gm, '<li><input type="checkbox" checked disabled><span class="md-done">$1</span></li>');
+  html = html.replace(/^- \[ \] (.+)$/gm, '<li><input type="checkbox" disabled>$1</li>');
   // 无序列表
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^- ([^\n].*)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-  // 有序列表
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // 还原有序列表占位符
+  html = html.replace(/%%OLI%%/g, '<li>');
+  html = html.replace(/%%\/OLI%%/g, '</li>');
   // 链接
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
   // 段落：连续非空行
@@ -3345,8 +3391,8 @@ function renderMarkdown(text) {
   html = '<p>' + html + '</p>';
   // 清理空标签和多余嵌套
   html = html.replace(/<p>\s*<\/p>/g, '');
-  html = html.replace(/<p>(<(h[123]|ul|blockquote|pre)>)/g, '$1');
-  html = html.replace(/(<\/(h[123]|ul|blockquote|pre)>)(<\/p>)?/g, '$1');
+  html = html.replace(/<p>(<(h[123]|ul|ol|blockquote|pre)>)/g, '$1');
+  html = html.replace(/(<\/(h[123]|ul|ol|blockquote|pre)>)(<\/p>)?/g, '$1');
   // 单个换行 → <br>
   html = html.replace(/\n/g, '<br>');
   return html;

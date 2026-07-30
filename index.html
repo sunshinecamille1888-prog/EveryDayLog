@@ -6098,6 +6098,7 @@ async function _clearScheduleRemote() {
 /* 从 GitHub auth.json 恢复 schedule 配置 */
 async function _restoreScheduleRemote() {
   try {
+    if (localStorage.getItem('backup_schedule_stopped') === '1') return null;
     var res = await fetch(GITHUB_AUTH_PAGES, { cache: 'no-cache' });
     if (!res.ok) return null;
     var remote = await res.json();
@@ -6238,6 +6239,7 @@ function toggleSchedule() {
   var cfg = loadScheduleConfig();
   if (cfg) {
     clearScheduleConfig();
+    localStorage.setItem('backup_schedule_stopped', '1');
     _clearScheduleRemote();
     stopScheduleTimer();
     showToast('定时备份已停止');
@@ -6262,6 +6264,7 @@ function toggleSchedule() {
       showToast('定时备份已启动 · 每月' + day + '号 ' + time);
     }
     saveScheduleConfig(newCfg);
+    localStorage.removeItem('backup_schedule_stopped');
     _saveScheduleRemote(newCfg);
     initScheduleUI();
   }

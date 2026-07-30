@@ -2910,11 +2910,15 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     addLedgerEntry();
   }
-  // Ctrl+S / Cmd+S: save
+  // Ctrl+S / Cmd+S: save (only when editor panel is visible)
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault();
-    saveEntry();
-    showToast('已保存');
+    e.preventDefault(); // 始终阻止浏览器默认保存网页行为
+    const editorPanel = document.querySelector('.editor-panel');
+    const tabPanel = document.getElementById('tabPanel');
+    // 仅在编辑器面板可见且非记账/体重记录模式时触发保存
+    if (editorPanel && editorPanel.style.display !== 'none' && tabPanel && tabPanel.style.display === 'none') {
+      saveEntry(true); // keepTemplateOpen: Cmd+S 快速保存不退出模板模式
+    }
   }
   // Ctrl+B / Cmd+B: bold (only when editor focused)
   if ((e.ctrlKey || e.metaKey) && e.key === 'b' && document.activeElement === document.getElementById('editor')) {
@@ -3244,7 +3248,7 @@ async function backupDayData() {
 }
 
 // ====== 编辑器 ======
-function saveEntry() {
+function saveEntry(keepTemplateOpen) {
   const content = document.getElementById('editor').value.trim();
   const entries = loadEntries();
   const entry = entries[currentDate] || { content: '', duration: 0 };
@@ -3261,18 +3265,20 @@ function saveEntry() {
         }
       });
     }
-    activeTemplateLabel = null;
-    document.getElementById('etLabel').textContent = '自由记录';
-    // 退出模板模式后编辑器退场，清除按钮激活态
-    document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.editor-panel').style.display = 'none';
-    document.getElementById('editor').style.display = 'none';
-    document.querySelector('.editor-toolbar').style.display = 'none';
-    document.querySelector('.editor-actions').style.display = 'none';
-    document.getElementById('mdPreview').style.display = 'none';
-    document.getElementById('dailyQuote').style.display = 'none';
-    document.getElementById('moodRow').style.display = 'none';
-    if (previewOn) togglePreview();
+    if (!keepTemplateOpen) {
+      activeTemplateLabel = null;
+      document.getElementById('etLabel').textContent = '自由记录';
+      // 退出模板模式后编辑器退场，清除按钮激活态
+      document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.editor-panel').style.display = 'none';
+      document.getElementById('editor').style.display = 'none';
+      document.querySelector('.editor-toolbar').style.display = 'none';
+      document.querySelector('.editor-actions').style.display = 'none';
+      document.getElementById('mdPreview').style.display = 'none';
+      document.getElementById('dailyQuote').style.display = 'none';
+      document.getElementById('moodRow').style.display = 'none';
+      if (previewOn) togglePreview();
+    }
   }
   // 保存心情
   const activeMood = document.querySelector('.mood-btn.mood-active');

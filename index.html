@@ -6143,7 +6143,7 @@ function startScheduleTimer(cfg) {
       _scheduleTimer = setTimeout(function() {
         exportFullBackup();
         scheduleNext();
-      }, 24 * 3600 * 1000);
+      }, msUntilNextDaily(cfg.time));
     }
     _scheduleTimer = setTimeout(function() {
       exportFullBackup();
@@ -6245,11 +6245,11 @@ function toggleSchedule() {
   } else {
     var mode = document.getElementById('scheduleMode').value;
     var time = document.getElementById('scheduleTime').value || '00:00';
+    var day = parseInt(document.getElementById('scheduleDay').value) || 1;
     var msg;
     if (mode === 'daily') {
       msg = '确定启动定时备份？\n每天 ' + time + ' 自动执行年度备份同步';
     } else {
-      var day = parseInt(document.getElementById('scheduleDay').value) || 1;
       msg = '确定启动定时备份？\n每月' + day + '号 ' + time + ' 自动执行年度备份同步';
     }
     if (!confirm(msg)) return;
@@ -6258,7 +6258,6 @@ function toggleSchedule() {
       newCfg = { type: 'daily', time: time };
       showToast('定时备份已启动 · 每天 ' + time);
     } else {
-      var day = parseInt(document.getElementById('scheduleDay').value) || 1;
       newCfg = { type: 'monthly', day: day, time: time };
       showToast('定时备份已启动 · 每月' + day + '号 ' + time);
     }

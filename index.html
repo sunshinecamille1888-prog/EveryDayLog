@@ -2610,6 +2610,150 @@ let currentRound = 0;
 let totalRoundsToday = 0;
 let currentPhase = 'focus'; // 'focus' | 'break'
 
+
+// ── 计时器状态持久化 ──
+const TIMER_STATE_KEY = 'timer_state';
+
+function saveTimerState() {
+  const state = {
+    timerSeconds,
+    isRunning,
+    timerStartAt,
+    timerStartSeconds,
+    totalElapsed,
+    initialSeconds,
+    countdownTarget,
+    autoCycleOn,
+    focusDuration,
+    breakDuration,
+    currentPhase,
+    currentRound,
+    totalRoundsToday,
+    currentTag,
+    savedAt: Date.now()
+  };
+  try { localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function clearTimerState() {
+  try { localStorage.removeItem(TIMER_STATE_KEY); } catch(e) {}
+}
+
+function loadTimerState() {
+  try {
+    const raw = localStorage.getItem(TIMER_STATE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (!state.isRunning && state.totalElapsed <= 0) { clearTimerState(); return; }
+    autoCycleOn = state.autoCycleOn || false;
+    focusDuration = state.focusDuration || 25 * 60;
+    breakDuration = state.breakDuration || 5 * 60;
+    currentPhase = state.currentPhase || 'focus';
+    currentRound = state.currentRound || 0;
+    totalRoundsToday = state.totalRoundsToday || 0;
+    currentTag = state.currentTag || null;
+    countdownTarget = state.countdownTarget || 25 * 60;
+    initialSeconds = state.initialSeconds || 25 * 60;
+    timerStartAt = state.timerStartAt || 0;
+    timerStartSeconds = state.timerStartSeconds || 0;
+    const realElapsed = Math.floor((Date.now() - timerStartAt) / 1000);
+    timerSeconds = Math.max(0, timerStartSeconds - realElapsed);
+    totalElapsed = realElapsed;
+    if (timerSeconds <= 0 && state.isRunning) {
+      totalElapsed = timerStartSeconds;
+      finishTimerFromReload();
+      return;
+    }
+    if (state.isRunning) {
+      isRunning = true;
+      updateTimerDisplay();
+      updateCycleUI();
+      document.getElementById('autoCycle').checked = autoCycleOn;
+      document.getElementById('cycleSettings').style.display = autoCycleOn ? 'flex' : 'none';
+      if (autoCycleOn) {
+        document.getElementById('focusMins').value = focusDuration / 60;
+        document.getElementById('breakMins').value = breakDuration / 60;
+      }
+      if (currentTag) document.getElementById('tagSelector').classList.add('locked');
+      document.getElementById('btnStart').style.display = 'none';
+      document.getElementById('btnPause').style.display = '';
+      document.getElementById('timerDone').style.display = 'none';
+      if (currentPhase === 'break') document.getElementById('btnStart').textContent = '开始休息';
+      timerInterval = setInterval(function() {
+        var elapsed = Math.floor((Date.now() - timerStartAt) / 1000);
+        timerSeconds = Math.max(0, timerStartSeconds - elapsed);
+        totalElapsed = elapsed;
+        updateTimerDisplay();
+        if (timerSeconds <= 0) finishTimer();
+      }, 1000);
+    } else {
+      isRunning = false;
+      updateTimerDisplay();
+      updateCycleUI();
+      document.getElementById('autoCycle').checked = autoCycleOn;
+      document.getElementById('cycleSettings').style.display = autoCycleOn ? 'flex' : 'none';
+    }
+    saveTimerState();
+  } catch(e) { clearTimerState(); }
+}
+
+function finishTimerFromReload() {
+  autoRecord();
+  if (autoCycleOn) {
+    if (currentPhase === 'focus') {
+      currentRound++;
+      totalRoundsToday++;
+      currentPhase = 'break';
+      timerSeconds = breakDuration;
+      initialSeconds = breakDuration;
+      timerStartSeconds = breakDuration;
+      timerStartAt = Date.now();
+      totalElapsed = 0;
+      isRunning = true;
+      document.getElementById('btnStart').textContent = '开始休息';
+      document.getElementById('timerDone').style.display = '';
+      document.getElementById('timerDone').textContent = '休息一下！';
+      updateTimerDisplay();
+      updateCycleUI();
+      timerInterval = setInterval(function() {
+        var elapsed = Math.floor((Date.now() - timerStartAt) / 1000);
+        timerSeconds = Math.max(0, timerStartSeconds - elapsed);
+        totalElapsed = elapsed;
+        updateTimerDisplay();
+        if (timerSeconds <= 0) finishTimer();
+      }, 1000);
+      saveTimerState();
+    } else {
+      currentPhase = 'focus';
+      timerSeconds = focusDuration;
+      initialSeconds = focusDuration;
+      timerStartSeconds = focusDuration;
+      timerStartAt = Date.now();
+      totalElapsed = 0;
+      isRunning = true;
+      document.getElementById('btnStart').textContent = '开始专注';
+      document.getElementById('timerDone').style.display = '';
+      document.getElementById('timerDone').textContent = '开始专注！';
+      updateTimerDisplay();
+      updateCycleUI();
+      timerInterval = setInterval(function() {
+        var elapsed = Math.floor((Date.now() - timerStartAt) / 1000);
+        timerSeconds = Math.max(0, timerStartSeconds - elapsed);
+        totalElapsed = elapsed;
+        updateTimerDisplay();
+        if (timerSeconds <= 0) finishTimer();
+      }, 1000);
+      saveTimerState();
+    }
+  } else {
+    totalElapsed = 0;
+    timerSeconds = initialSeconds;
+    document.getElementById('timerDone').style.display = '';
+    document.getElementById('timerDone').textContent = '专注完成！';
+    updateTimerDisplay();
+    clearTimerState();
+  }
+}
 // ── 标签系统 ──
 const TAG_STORAGE_KEY = 'timer_tags';
 const DEFAULT_TAGS = ['学习', '工作', '看书', '锻炼', '冥想', '写作'];
@@ -2865,6 +3009,7 @@ function _doStartTimer() {
       finishTimer();
     }
   }, 1000);
+  saveTimerState();
 }
 
 function pauseTimer() {
@@ -2875,6 +3020,7 @@ function pauseTimer() {
   document.getElementById('btnStart').style.display = '';
   document.getElementById('btnPause').style.display = 'none';
   document.title = '日课';
+  saveTimerState();
 }
 
 // 页面恢复可见时立即刷新计时显示（解决移动端后台挂起问题）
@@ -2885,6 +3031,7 @@ document.addEventListener('visibilitychange', () => {
     totalElapsed = elapsed;
     updateTimerDisplay();
     if (timerSeconds <= 0) finishTimer();
+    saveTimerState();
   }
 });
 
@@ -3069,6 +3216,7 @@ function autoRecord() {
   else if (currentStatsTab === 'tagDist') drawTagDistribution();
   backupDayData();
   totalElapsed = 0;
+  clearTimerState();
 }
 
 function resetTimer() {
@@ -3080,6 +3228,7 @@ function resetTimer() {
   document.getElementById('timerDone').style.display = 'none';
   updateTimerDisplay();
   updateCycleUI();
+  clearTimerState();
 }
 
 function recordTime() {
@@ -3109,6 +3258,7 @@ function recordTime() {
   timerSeconds = initialSeconds;
   document.getElementById('timerDone').style.display = 'none';
   updateTimerDisplay();
+  clearTimerState();
 }
 
 function updateSessionInfo(entry) {
@@ -3421,7 +3571,27 @@ function togglePreview() {
 }
 
 // 编辑时实时更新预览
+// 页面关闭/刷新前自动记录已流逝时长并保存计时器状态
+window.addEventListener('beforeunload', function() {
+  if (isRunning && totalElapsed > 0) {
+    var entries = loadEntries();
+    var entry = entries[currentDate] || { content: '', duration: 0, tags: [], rounds: 0, tagDurations: {} };
+    entry.duration = (entry.duration || 0) + totalElapsed;
+    if (currentTag) {
+      entry.tagDurations = entry.tagDurations || {};
+      entry.tagDurations[currentTag] = (entry.tagDurations[currentTag] || 0) + totalElapsed;
+    }
+    entry.timeBlocks = entry.timeBlocks || [];
+    entry.timeBlocks.push({ hour: new Date().getHours(), mins: Math.round(totalElapsed / 60) });
+    entries[currentDate] = entry;
+    saveEntries(entries);
+    totalElapsed = 0;
+    saveTimerState();
+  }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
+  loadTimerState();
   // 兜底隐藏编辑器面板（防止 init 中 setDate 因 DOM 未就绪漏执行）
   try { document.querySelector('.editor-panel').style.display = 'none'; } catch(e) {}
   // 设备检测：PC / Phone

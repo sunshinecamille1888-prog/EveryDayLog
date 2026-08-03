@@ -1293,6 +1293,7 @@ body.theme-dark .wt-diff-same { background: #1e1a14; }
         <span class="cycle-settings" id="cycleSettings" style="display:none;">
           专注<input type="number" id="focusMins" value="25" min="1" max="120" onchange="updateCycleSettings()">分
           休息<input type="number" id="breakMins" value="5" min="1" max="60" onchange="updateCycleSettings()">分
+          每日上限<input type="number" id="maxRounds" value="12" min="1" max="100" onchange="updateCycleSettings()">轮
         </span>
       </div>
       <div class="preset-row" id="presetRow">
@@ -2616,6 +2617,9 @@ let breakDuration = 5 * 60;
 let currentRound = 0;
 let totalRoundsToday = 0;
 let currentPhase = 'focus'; // 'focus' | 'break'
+const DAILY_MAX_ROUNDS_DEFAULT = 12;
+let dailyMaxRounds = DAILY_MAX_ROUNDS_DEFAULT;
+let cycleDate = '';
 
 
 // ── 计时器状态持久化 ──
@@ -2636,6 +2640,8 @@ function saveTimerState() {
     currentPhase,
     currentRound,
     totalRoundsToday,
+    cycleDate,
+    dailyMaxRounds,
     currentTag,
     savedAt: Date.now()
   };
@@ -2658,6 +2664,14 @@ function loadTimerState() {
     currentPhase = state.currentPhase || 'focus';
     currentRound = state.currentRound || 0;
     totalRoundsToday = state.totalRoundsToday || 0;
+    cycleDate = state.cycleDate || '';
+    dailyMaxRounds = state.dailyMaxRounds || DAILY_MAX_ROUNDS_DEFAULT;
+    // 跨天检测：若日期已变，重置今日轮次
+    const today = getToday();
+    if (cycleDate && cycleDate !== today) {
+      totalRoundsToday = 0;
+      cycleDate = today;
+    }
     currentTag = state.currentTag || null;
     countdownTarget = state.countdownTarget || 25 * 60;
     initialSeconds = state.initialSeconds || 25 * 60;
@@ -2680,6 +2694,7 @@ function loadTimerState() {
       if (autoCycleOn) {
         document.getElementById('focusMins').value = focusDuration / 60;
         document.getElementById('breakMins').value = breakDuration / 60;
+        document.getElementById('maxRounds').value = dailyMaxRounds;
       }
       if (currentTag) document.getElementById('tagSelector').classList.add('locked');
       document.getElementById('btnStart').style.display = 'none';
@@ -2710,6 +2725,19 @@ function finishTimerFromReload() {
     if (currentPhase === 'focus') {
       currentRound++;
       totalRoundsToday++;
+      // 每日上限检测（页面重载恢复场景）
+      if (totalRoundsToday > dailyMaxRounds) {
+        stopAutoCycle('daily_limit');
+        totalElapsed = 0;
+        timerSeconds = 0;
+        document.getElementById('timerDisplay').textContent = '00:00';
+        document.getElementById('timerDone').style.display = '';
+        document.getElementById('timerDone').textContent = '今日上限已到';
+        document.getElementById('btnStart').textContent = '开始专注';
+        updateTimerDisplay();
+        clearTimerState();
+        return;
+      }
       currentPhase = 'break';
       timerSeconds = breakDuration;
       initialSeconds = breakDuration;
@@ -2903,6 +2931,7 @@ function toggleAutoCycle() {
   if (autoCycleOn) {
     focusDuration = parseInt(document.getElementById('focusMins').value) * 60;
     breakDuration = parseInt(document.getElementById('breakMins').value) * 60;
+    dailyMaxRounds = parseInt(document.getElementById('maxRounds').value) || DAILY_MAX_ROUNDS_DEFAULT;
     if (!isRunning) {
       countdownTarget = focusDuration;
       timerSeconds = focusDuration;
@@ -2911,6 +2940,9 @@ function toggleAutoCycle() {
     }
     currentRound = 0;
     currentPhase = 'focus';
+    // 新的一天或首次开启：重置今日轮次计数
+    const today = getToday();
+    if (cycleDate !== today) { totalRoundsToday = 0; cycleDate = today; }
     updateCycleUI();
   } else {
     document.getElementById('cycleIndicator').style.display = 'none';
@@ -2920,6 +2952,7 @@ function toggleAutoCycle() {
 function updateCycleSettings() {
   focusDuration = parseInt(document.getElementById('focusMins').value) * 60;
   breakDuration = parseInt(document.getElementById('breakMins').value) * 60;
+  dailyMaxRounds = parseInt(document.getElementById('maxRounds').value) || DAILY_MAX_ROUNDS_DEFAULT;
   if (autoCycleOn && currentPhase === 'focus' && !isRunning) {
     countdownTarget = focusDuration;
     timerSeconds = focusDuration;
@@ -3149,6 +3182,28 @@ function playChime() {
   } catch(e) {}
 }
 
+function checkDailyLimit() {
+  if (!autoCycleOn) return false;
+  if (totalRoundsToday >= dailyMaxRounds) {
+    stopAutoCycle('daily_limit');
+    return true;
+  }
+  return false;
+}
+
+function stopAutoCycle(reason) {
+  autoCycleOn = false;
+  document.getElementById('autoCycle').checked = false;
+  document.getElementById('cycleSettings').style.display = 'none';
+  document.getElementById('cycleIndicator').style.display = 'none';
+  const msg = reason === 'daily_limit'
+    ? `今日已达上限（${dailyMaxRounds}轮专注），自动循环已停止`
+    : '自动循环已停止';
+  showToast(msg);
+  sendNotification('自动循环停止', msg);
+  clearTimerState();
+}
+
 function finishTimer() {
   playBeep(523, 0.15, 0.3);
   setTimeout(() => playBeep(659, 0.15, 0.3), 200);
@@ -3162,6 +3217,16 @@ function finishTimer() {
       // 专注结束 → 进入休息
       currentRound++;
       totalRoundsToday++;
+      // 每日上限检测
+      if (totalRoundsToday > dailyMaxRounds) {
+        stopAutoCycle('daily_limit');
+        playChime();
+        document.getElementById('timerDisplay').textContent = '00:00';
+        document.getElementById('timerDone').style.display = '';
+        document.getElementById('timerDone').textContent = '今日上限已到';
+        document.getElementById('btnStart').textContent = '开始专注';
+        return;
+      }
       currentPhase = 'break';
       timerSeconds = breakDuration;
       initialSeconds = breakDuration;

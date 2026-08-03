@@ -2504,6 +2504,13 @@ function switchTab(tab) {
 }
 
 var _pendingTemplateContents = null;
+// 各模板默认内容（用于判断用户是否实际编辑过）
+const DEFAULT_TEMPLATE_CONTENT = {
+  '今日三件事': '## 今日目标\n\n1. \n2. \n3. \n\n## 完成事项\n\n- \n\n## 明日计划\n\n- ',
+  '工作日志': '## 今日工作\n\n- \n\n## 遇到的问题\n\n- \n\n## 解决方案\n\n- \n\n## 明日安排\n\n- ',
+  '学习笔记': '## 学习内容\n\n- \n\n## 关键知识点\n\n- \n\n## 疑问与思考\n\n- \n\n## 下一步计划\n\n- ',
+  '三餐四季': '## 早餐\n\n- \n\n## 午餐\n\n- \n\n## 晚餐\n\n- \n\n## 今日饮食小结\n\n- ',
+};
 function selectDropdownTab(tab, label) {
   const editor = document.getElementById('editor');
   const entries = loadEntries();
@@ -3410,8 +3417,11 @@ function saveEntry(keepTemplateOpen) {
     // 同时将其他模板的暂存内容也一并持久化（跳过空内容）
     if (_pendingTemplateContents) {
       Object.keys(_pendingTemplateContents).forEach(k => {
-        if (k !== activeTemplateLabel && _pendingTemplateContents[k].trim()) {
-          entry.templateContents[k] = _pendingTemplateContents[k];
+        const pendingVal = _pendingTemplateContents[k];
+        const defaultVal = DEFAULT_TEMPLATE_CONTENT[k] || '';
+        // 仅当内容非空 且 与默认模板不同 时才持久化
+        if (k !== activeTemplateLabel && pendingVal.trim() && pendingVal.trim() !== defaultVal.trim()) {
+          entry.templateContents[k] = pendingVal;
         }
       });
     }
@@ -5306,7 +5316,14 @@ function renderMonthSummary(year, month, entries) {
   }
   const parts = [];
   if (entry.templateContents && Object.keys(entry.templateContents).length) {
-    parts.push(Object.keys(entry.templateContents).map(t => t + ' ✅').join('<br>'));
+    const completedModules = Object.keys(entry.templateContents).filter(t => {
+      const val = (entry.templateContents[t] || '').trim();
+      const def = (DEFAULT_TEMPLATE_CONTENT[t] || '').trim();
+      return val && val !== def;
+    });
+    if (completedModules.length) {
+      parts.push(completedModules.map(t => t + ' ✅').join('<br>'));
+    }
   } else if (entry.content) {
     const firstLine = entry.content.trim().split('\n')[0].replace(/^#+\s*/, '').substring(0, 15);
     parts.push(firstLine || '(空)');
